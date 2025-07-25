@@ -37,7 +37,7 @@ export default function Home() {
             Sign out
           </button>
           {analysis && (
-            <div className="mt-8 p-4 border rounded-lg shadow-md bg-white">
+            <div className="mt-8 p-4 border rounded-lg shadow-md bg-black text-white">
               <h2 className="text-xl font-semibold mb-2">Analysis Result</h2>
               <p className="text-left whitespace-pre-wrap">{analysis}</p>
             </div>

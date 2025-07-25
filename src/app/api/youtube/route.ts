@@ -46,9 +46,17 @@ export async function GET(req: NextRequest) {
       likedNextPageToken = likedResponse.data.nextPageToken || undefined;
     } while (likedNextPageToken);
 
-    const youtubeData = {
-      likedVideos: allLikedVideos.map((video) => video.snippet?.title),
-      subscriptions: allSubscriptions.map((sub) => sub.snippet?.title),
+        const youtubeData = {
+      likedVideos: allLikedVideos.map((video) => ({
+        title: video.snippet?.title,
+        videoId: video.id,
+        channelId: video.snippet?.channelId,
+        url: `https://www.youtube.com/watch?v=${video.id}`,
+      })),
+      subscriptions: allSubscriptions.map((sub) => ({
+        title: sub.snippet?.title,
+        channelId: sub.snippet?.resourceId?.channelId,
+      })),
     };
 
     const filePath = path.join(process.cwd(), "youtube.json");
