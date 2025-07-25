@@ -1,72 +1,49 @@
-'use client'
-
-import { useSession, signIn, signOut } from "next-auth/react"
-import { useState } from "react"
-
-interface LikedVideo {
-  id: string;
-  snippet: {
-    title: string;
-    description: string;
-    thumbnails: {
-      default: {
-        url: string;
-      };
-    };
-  };
-}
-
-interface LikedVideosData {
-  likedVideos: LikedVideo[];
-  totalResults: number;
-}
+"use client"
+import { useState } from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 
 export default function Home() {
-  const { data: session } = useSession()
-  const [inferredProfile, setInferredProfile] = useState<string | null>(null)
-  const [likedVideosData, setLikedVideosData] = useState<LikedVideosData | null>(null) // eslint-disable-line @typescript-eslint/no-unused-vars
+  const { data: session } = useSession();
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const fetchInferredProfile = async () => { // Renamed function for clarity
-    const res = await fetch('/api/youtube')
-    const data = await res.json()
-    setInferredProfile(data.inferredProfile)
-    setLikedVideosData(null); // Clear liked videos data when fetching inferred profile
-  }
-
-  const fetchLikedVideos = async () => { // New function to fetch liked videos
-    const res = await fetch('/api/youtube?type=likedVideos')
-    const data = await res.json()
-    setLikedVideosData(data)
-    setInferredProfile(null); // Clear inferred profile data when fetching liked videos
-    console.log("Liked Videos:", data); // Log to browser console
-  }
-
-  if (session) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <p>Signed in as {session.user?.email}</p>
-        <button onClick={() => signOut()} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mt-4">
-          Sign out
-        </button>
-        <button onClick={fetchInferredProfile} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4">
-          Fetch Inferred Profile
-        </button>
-        <button onClick={fetchLikedVideos} className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded mt-4">
-          Fetch Liked Videos
-        </button>
-        {inferredProfile && (
-          <pre className="mt-4" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{inferredProfile}</pre>
-        )}
-        {/* No direct display for likedVideosData on frontend as per user request, but it's logged to console */}
-      </main>
-    )
-  }
+  const handleAnalysis = async () => {
+    setIsLoading(true);
+    setAnalysis(null);
+    try {
+      const res = await fetch('/api/youtube');
+      const data = await res.json();
+      setAnalysis(data.analysis);
+    } catch (error) {
+      console.error('Error fetching analysis:', error);
+      setAnalysis('Failed to fetch analysis.');
+    }
+    setIsLoading(false);
+  };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <button onClick={() => signIn('google')} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-        Connect with Google
-      </button>
+      {!session ? (
+        <button onClick={() => signIn('google')} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          Connect your Google account
+        </button>
+      ) : (
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Welcome, {session.user?.name}</h1>
+          <button onClick={handleAnalysis} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" disabled={isLoading}>
+            {isLoading ? 'Analyzing...' : 'See who you are?'}
+          </button>
+          <button onClick={() => signOut()} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mt-4">
+            Sign out
+          </button>
+          {analysis && (
+            <div className="mt-8 p-4 border rounded-lg shadow-md bg-white">
+              <h2 className="text-xl font-semibold mb-2">Analysis Result</h2>
+              <p className="text-left whitespace-pre-wrap">{analysis}</p>
+            </div>
+          )}
+        </div>
+      )}
     </main>
-  )
+  );
 }

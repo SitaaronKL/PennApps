@@ -2,6 +2,8 @@ import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import fs from "fs/promises";
+import path from "path";
 
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -16,57 +18,61 @@ export async function GET(req: NextRequest) {
   const youtube = google.youtube({ version: "v3", auth });
 
   try {
-    const { searchParams } = new URL(req.url);
-    const type = searchParams.get('type');
+    // Fetch subscriptions
+    let allSubscriptions: youtube_v3.Schema$Subscription[] = [];
+    let subNextPageToken: string | undefined = undefined;
+    do {
+      const subResponse = await youtube.subscriptions.list({
+        part: ["snippet"],
+        mine: true,
+        maxResults: 50,
+        pageToken: subNextPageToken,
+      });
+      allSubscriptions = allSubscriptions.concat(subResponse.data.items || []);
+      subNextPageToken = subResponse.data.nextPageToken || undefined;
+    } while (subNextPageToken);
 
-    if (type === 'likedVideos') {
-      let allLikedVideos: youtube_v3.Schema$Video[] = [];
-      let nextPageToken: string | undefined = undefined;
+    // Fetch liked videos
+    let allLikedVideos: youtube_v3.Schema$Video[] = [];
+    let likedNextPageToken: string | undefined = undefined;
+    do {
+      const likedResponse = await youtube.videos.list({
+        part: ["snippet"],
+        myRating: "like",
+        maxResults: 50,
+        pageToken: likedNextPageToken,
+      });
+      allLikedVideos = allLikedVideos.concat(likedResponse.data.items || []);
+      likedNextPageToken = likedResponse.data.nextPageToken || undefined;
+    } while (likedNextPageToken);
 
-      do {
-        const response = await youtube.videos.list({
-          part: ["snippet"],
-          myRating: "like",
-          maxResults: 50,
-          pageToken: nextPageToken,
-        });
-        allLikedVideos = allLikedVideos.concat(response.data.items || []);
-        nextPageToken = response.data.nextPageToken || undefined;
-      } while (nextPageToken);
+    const youtubeData = {
+      likedVideos: allLikedVideos.map((video) => video.snippet?.title),
+      subscriptions: allSubscriptions.map((sub) => sub.snippet?.title),
+    };
 
-      console.log(JSON.stringify({ likedVideos: allLikedVideos, totalResults: allLikedVideos.length }, null, 2));
-      return NextResponse.json({ likedVideos: allLikedVideos, totalResults: allLikedVideos.length });
-    } else {
-      // Existing logic for fetching subscriptions and inferring profile
-      let allSubscriptions: youtube_v3.Schema$Subscription[] = [];
-      let nextPageToken: string | undefined = undefined;
+    const filePath = path.join(process.cwd(), "youtube.json");
+    await fs.writeFile(filePath, JSON.stringify(youtubeData, null, 2));
 
-      do {
-        const response = await youtube.subscriptions.list({
-          part: ["snippet"],
-          mine: true,
-          maxResults: 50,
-          pageToken: nextPageToken,
-        });
-        allSubscriptions = allSubscriptions.concat(response.data.items || []);
-        nextPageToken = response.data.nextPageToken || undefined;
-      } while (nextPageToken);
+    const prompt = `
+      Based on the following YouTube data, create a detailed and nuanced profile of the user.
+      Analyze their subscriptions and liked videos to infer their interests, potential profession, age range, and other relevant personality traits.
+      Be mindful of potential biases in the data. For example, liked videos might not always represent genuine interests but could be influenced by trends or social pressure.
+      Similarly, subscriptions might not reflect active interests.
+      Your analysis should be as objective as possible, avoiding stereotypes and focusing on a holistic understanding of the user.
+      Provide a comprehensive summary of your findings, highlighting key insights and potential contradictions in the data.
 
-      const channelTitles = allSubscriptions.map(sub => sub.snippet.title);
+      ${JSON.stringify(youtubeData)}
+    `;
 
-      const prompt = `Based on the following YouTube channel subscriptions, infer the user's interests, hobbies, and general profile. Provide a concise summary:
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-${channelTitles.join(", ")}`;
+    const result = await model.generateContent(prompt);
+    const geminiResponse = await result.response;
+    const analysis = geminiResponse.text();
 
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const result = await model.generateContent(prompt);
-      const geminiResponse = await result.response;
-      const inferredProfile = geminiResponse.text();
-
-      console.log(JSON.stringify({ inferredProfile }, null, 2));
-      return NextResponse.json({ inferredProfile });
-    }
+    return NextResponse.json({ analysis });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Failed to fetch YouTube data or infer profile" }, { status: 500 });
