@@ -1,52 +1,119 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
+import { google, youtube_v3 } from "googleapis";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs/promises";
 import path from "path";
 
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const auth = new google.auth.OAuth2();
   auth.setCredentials({ access_token: token.accessToken as string });
-
   const youtube = google.youtube({ version: "v3", auth });
 
   try {
-    // Fetch subscriptions
+    // --- Fetch subscriptions ---
     let allSubscriptions: youtube_v3.Schema$Subscription[] = [];
-    let subNextPageToken: string | undefined = undefined;
+    let subNextPageToken: string | undefined;
+
     do {
-      const subResponse = await youtube.subscriptions.list({
-        part: ["snippet"],
-        mine: true,
-        maxResults: 50,
-        pageToken: subNextPageToken,
-      });
-      allSubscriptions = allSubscriptions.concat(subResponse.data.items || []);
-      subNextPageToken = subResponse.data.nextPageToken || undefined;
+      // pass a second `MethodOptions` arg (here `{}`) so TS picks the Promise overload
+      const { data: subData } = await youtube.subscriptions.list(
+        {
+          part: ["snippet"],
+          mine: true,
+          maxResults: 50,
+          pageToken: subNextPageToken,
+        },
+        {}
+      );
+      allSubscriptions = allSubscriptions.concat(subData.items ?? []);
+      subNextPageToken = subData.nextPageToken ?? undefined;
     } while (subNextPageToken);
 
-    // Fetch liked videos
+    // --- Fetch liked videos ---
     let allLikedVideos: youtube_v3.Schema$Video[] = [];
-    let likedNextPageToken: string | undefined = undefined;
+    let likedNextPageToken: string | undefined;
+
     do {
-      const likedResponse = await youtube.videos.list({
-        part: ["snippet"],
-        myRating: "like",
-        maxResults: 50,
-        pageToken: likedNextPageToken,
-      });
-      allLikedVideos = allLikedVideos.concat(likedResponse.data.items || []);
-      likedNextPageToken = likedResponse.data.nextPageToken || undefined;
+      const { data: likedData } = await youtube.videos.list(
+        {
+          part: ["snippet"],
+          myRating: "like",
+          maxResults: 50,
+          pageToken: likedNextPageToken,
+        },
+        {}
+      );
+      allLikedVideos = allLikedVideos.concat(likedData.items ?? []);
+      likedNextPageToken = likedData.nextPageToken ?? undefined;
     } while (likedNextPageToken);
 
-        const youtubeData = {
+    // --- Fetch watch later videos ---
+    let allWatchLaterVideos: youtube_v3.Schema$PlaylistItem[] = [];
+    let watchLaterNextPageToken: string | undefined;
+
+    // First, get the watch later playlist ID
+    const { data: playlists } = await youtube.playlists.list({
+      part: ["id", "snippet"],
+      mine: true,
+      maxResults: 50,
+    });
+
+    const watchLaterPlaylist = playlists.items?.find(
+      (p) => p.snippet?.title === "Watch Later"
+    );
+
+    if (watchLaterPlaylist && watchLaterPlaylist.id) {
+      do {
+        const { data: watchLaterData } = await youtube.playlistItems.list({
+          part: ["snippet"],
+          playlistId: watchLaterPlaylist.id,
+          maxResults: 50,
+          pageToken: watchLaterNextPageToken,
+        });
+        allWatchLaterVideos = allWatchLaterVideos.concat(
+          watchLaterData.items ?? []
+        );
+        watchLaterNextPageToken = watchLaterData.nextPageToken ?? undefined;
+      } while (watchLaterNextPageToken);
+    }
+
+    const allPlaylists = await Promise.all(
+      (playlists.items ?? [])
+        .filter((p) => p.id && p.snippet?.title !== "Watch Later")
+        .map(async (playlist) => {
+          let items: youtube_v3.Schema$PlaylistItem[] = [];
+          let pageToken: string | undefined;
+          do {
+            const { data: playlistItemsData } =
+              await youtube.playlistItems.list({
+                part: ["snippet"],
+                playlistId: playlist.id!,
+                maxResults: 50,
+                pageToken,
+              });
+            items = items.concat(playlistItemsData.items ?? []);
+            pageToken = playlistItemsData.nextPageToken ?? undefined;
+          } while (pageToken);
+          return {
+            title: playlist.snippet?.title,
+            videos: items.map((item) => ({
+              title: item.snippet?.title,
+              videoId: item.snippet?.resourceId?.videoId,
+              channelId: item.snippet?.channelId,
+              url: `https://www.youtube.com/watch?v=${item.snippet?.resourceId?.videoId}`,
+            })),
+          };
+        })
+    );
+
+    // --- Write JSON file ---
+    const youtubeData = {
       likedVideos: allLikedVideos.map((video) => ({
         title: video.snippet?.title,
         videoId: video.id,
@@ -57,25 +124,50 @@ export async function GET(req: NextRequest) {
         title: sub.snippet?.title,
         channelId: sub.snippet?.resourceId?.channelId,
       })),
+      watchLater: allWatchLaterVideos.map((item) => ({
+        title: item.snippet?.title,
+        videoId: item.snippet?.resourceId?.videoId,
+        channelId: item.snippet?.channelId,
+        url: `https://www.youtube.com/watch?v=${item.snippet?.resourceId?.videoId}`,
+      })),
+      playlists: allPlaylists,
     };
-
     const filePath = path.join(process.cwd(), "youtube.json");
     await fs.writeFile(filePath, JSON.stringify(youtubeData, null, 2));
 
+    // --- Generate profile via Gemini ---
     const prompt = `
-      Based on the following YouTube data, create a detailed and nuanced profile of the user.
-      Analyze their subscriptions and liked videos to infer their interests, potential profession, age range, and other relevant personality traits.
-      Be mindful of potential biases in the data. For example, liked videos might not always represent genuine interests but could be influenced by trends or social pressure.
-      Similarly, subscriptions might not reflect active interests.
-      Your analysis should be as objective as possible, avoiding stereotypes and focusing on a holistic understanding of the user.
-      Provide a comprehensive summary of your findings, highlighting key insights and potential contradictions in the data.
+      Analyze the following YouTube data to create a detailed user profile.
 
-      ${JSON.stringify(youtubeData)}
+      **Long-Term Interests (Subscriptions):**
+      This list represents the user's established, long-term interests. These are channels they have actively subscribed to, indicating a deeper level of engagement. Analyze the topics, styles, and themes of these channels to build a foundational understanding of the user's core passions and intellectual pursuits. Consider the channels as a hierarchy of interests, from broader topics to more niche ones.
+
+      ${JSON.stringify(
+        youtubeData.subscriptions
+      )}
+
+      **Short-Term Interests (Liked Videos):**
+      This list represents the user's more immediate, short-term interests. These are videos the user has liked, which could be spontaneous discoveries or related to their long-term interests. Use this information to add nuance and detail to the profile, identifying recent trends in their viewing habits and potential new areas of interest.
+
+      ${JSON.stringify(youtubeData.likedVideos)}
+
+      **Aspirational Interests (Watch Later):**
+      This list represents the user's aspirational interests and learning goals. These are videos the user has saved to watch later, indicating a desire to explore these topics in the future. Analyze these videos to understand what the user wants to learn about and what new skills they may be trying to acquire.
+
+      ${JSON.stringify(youtubeData.watchLater)}
+
+      **Organized Interests (Playlists):**
+      This list represents the user's self-organized interests. These are playlists created by the user, indicating a deliberate effort to categorize and curate content. Analyze the titles of the playlists and the videos within them to understand how the user structures their knowledge and interests. Look for themes and patterns across playlists to identify broader areas of passion and expertise.
+
+      ${JSON.stringify(allPlaylists)}
+
+      **Synthesize and Profile:**
+      Combine the analysis of all these data points to create a comprehensive and insightful profile of the user. The profile should be well-structured, detailed, and read like a story of their intellectual and entertainment journey. Go beyond a simple list of topics and infer their personality, learning style, and potential future interests. Make it powerful and complex.
     `;
-
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
+    const genAI = new GoogleGenerativeAI(
+      process.env.GEMINI_API_KEY as string
+    );
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     const geminiResponse = await result.response;
     const analysis = geminiResponse.text();
@@ -83,6 +175,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ analysis });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to fetch YouTube data or infer profile" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch YouTube data or infer profile" },
+      { status: 500 }
+    );
   }
 }
