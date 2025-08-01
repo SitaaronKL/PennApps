@@ -3,8 +3,6 @@ import { google } from 'googleapis';
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
-
 async function getAuthenticatedClient(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 

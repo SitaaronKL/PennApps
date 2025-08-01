@@ -1,12 +1,20 @@
 "use client"
 import { useState } from 'react';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { signIn, signOut } from 'next-auth/react';
+import { Session } from 'next-auth';
+
+interface Email {
+  id: string;
+  subject: string;
+  from: string;
+  snippet: string;
+}
 
 export default function Home() {
-  const { data: session } = useSession();
+  const [session] = useState<Session | null>(null);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [emails, setEmails] = useState<any[]>([]);
+  const [emails, setEmails] = useState<Email[]>([]);
   const [isFetchingEmails, setIsFetchingEmails] = useState(false);
 
   const handleAnalysis = async () => {

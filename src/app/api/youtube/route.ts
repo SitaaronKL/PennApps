@@ -118,6 +118,7 @@ export async function GET(req: NextRequest) {
       const gmailFileContent = await fs.readFile(gmailFilePath, "utf-8");
       gmailData = JSON.parse(gmailFileContent);
     } catch (error) {
+      console.error("Error reading gmail-analysis.json:", error);
       // It's okay if the file doesn't exist
       console.log("gmail-analysis.json not found, proceeding without it.");
     }
