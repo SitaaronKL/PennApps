@@ -112,8 +112,18 @@ export async function GET(req: NextRequest) {
         })
     );
 
+    const gmailFilePath = path.join(process.cwd(), "gmail-analysis.json");
+    let gmailData = [];
+    try {
+      const gmailFileContent = await fs.readFile(gmailFilePath, "utf-8");
+      gmailData = JSON.parse(gmailFileContent);
+    } catch (error) {
+      // It's okay if the file doesn't exist
+      console.log("gmail-analysis.json not found, proceeding without it.");
+    }
+
     // --- Write JSON file ---
-    const youtubeData = {
+    const digitalFingerprint = {
       likedVideos: allLikedVideos.map((video) => ({
         title: video.snippet?.title,
         videoId: video.id,
@@ -131,35 +141,41 @@ export async function GET(req: NextRequest) {
         url: `https://www.youtube.com/watch?v=${item.snippet?.resourceId?.videoId}`,
       })),
       playlists: allPlaylists,
+      sentEmails: gmailData,
     };
-    const filePath = path.join(process.cwd(), "youtube.json");
-    await fs.writeFile(filePath, JSON.stringify(youtubeData, null, 2));
+    const filePath = path.join(process.cwd(), "digital-fingerprint.json");
+    await fs.writeFile(filePath, JSON.stringify(digitalFingerprint, null, 2));
 
     // --- Generate profile via Gemini ---
     const prompt = `
-      Analyze the following YouTube data to create a detailed user profile.
+      Analyze the following YouTube and Gmail data to create a detailed user profile.
 
       **Long-Term Interests (Subscriptions):**
       This list represents the user's established, long-term interests. These are channels they have actively subscribed to, indicating a deeper level of engagement. Analyze the topics, styles, and themes of these channels to build a foundational understanding of the user's core passions and intellectual pursuits. Consider the channels as a hierarchy of interests, from broader topics to more niche ones.
 
       ${JSON.stringify(
-        youtubeData.subscriptions
+        digitalFingerprint.subscriptions
       )}
 
       **Short-Term Interests (Liked Videos):**
       This list represents the user's more immediate, short-term interests. These are videos the user has liked, which could be spontaneous discoveries or related to their long-term interests. Use this information to add nuance and detail to the profile, identifying recent trends in their viewing habits and potential new areas of interest.
 
-      ${JSON.stringify(youtubeData.likedVideos)}
+      ${JSON.stringify(digitalFingerprint.likedVideos)}
 
       **Aspirational Interests (Watch Later):**
       This list represents the user's aspirational interests and learning goals. These are videos the user has saved to watch later, indicating a desire to explore these topics in the future. Analyze these videos to understand what the user wants to learn about and what new skills they may be trying to acquire.
 
-      ${JSON.stringify(youtubeData.watchLater)}
+      ${JSON.stringify(digitalFingerprint.watchLater)}
 
       **Organized Interests (Playlists):**
       This list represents the user's self-organized interests. These are playlists created by the user, indicating a deliberate effort to categorize and curate content. Analyze the titles of the playlists and the videos within them to understand how the user structures their knowledge and interests. Look for themes and patterns across playlists to identify broader areas of passion and expertise.
 
       ${JSON.stringify(allPlaylists)}
+
+      **Communications Analysis (Sent Emails):**
+      This is a list of the user's recent sent emails. Analyze the content of these emails to understand their communication style, professional interests, and personal connections. Look for patterns in topics, language, and tone to add another layer of depth to the user profile.
+
+      ${JSON.stringify(digitalFingerprint.sentEmails)}
 
       **Synthesize and Profile:**
       Combine the analysis of all these data points to create a comprehensive and insightful profile of the user. The profile should be well-structured, detailed, and read like a story of their intellectual and entertainment journey. Go beyond a simple list of topics and infer their personality, learning style, and potential future interests. Make it powerful and complex.
