@@ -47,6 +47,12 @@ const authOptions = {
       session.accessToken = token.accessToken
       return session
     },
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+      return baseUrl
+    },
+    async signIn({ account, profile }: { account: Account | null; profile?: any }) {
+      return true
+    },
   },
 }
 

@@ -1,58 +1,49 @@
+import { getToken } from "next-auth/jwt";
+import { NextRequest, NextResponse } from "next/server";
+import { google } from "googleapis";
 
-import { google } from 'googleapis';
-import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-
-async function getAuthenticatedClient(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-
   if (!token) {
-    throw new Error('User not authenticated');
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const auth = new google.auth.OAuth2();
-  auth.setCredentials({
-    access_token: token.accessToken as string,
-    refresh_token: token.refreshToken as string,
-  });
+  auth.setCredentials({ access_token: token.accessToken as string });
+  const gmail = google.gmail({ version: "v1", auth });
 
-  return google.gmail({ version: 'v1', auth });
-}
-
-export async function GET(req: NextRequest) {
   try {
-    const gmail = await getAuthenticatedClient(req);
     const response = await gmail.users.messages.list({
-      userId: 'me',
-      q: 'in:sent',
-      maxResults: 10, // Fetch the 10 most recent sent emails
+      userId: "me",
+      q: "in:sent",
+      maxResults: 20,
     });
 
     const messages = response.data.messages || [];
-
-    if (messages.length === 0) {
-      return NextResponse.json({ emails: [] });
-    }
-
-    const emailPromises = messages.map(async (message) => {
-      const msg = await gmail.users.messages.get({
-        userId: 'me',
-        id: message.id!,
-      });
-      const { payload } = msg.data;
-      const headers = payload?.headers;
-      const subject = headers?.find((header) => header.name === 'Subject')?.value || 'No Subject';
-      const from = headers?.find((header) => header.name === 'From')?.value || 'No Sender';
-      const snippet = msg.data.snippet || '';
-
-      return { id: msg.data.id, subject, from, snippet };
-    });
-
-    const emails = await Promise.all(emailPromises);
+    const emails = await Promise.all(
+      messages.map(async (message) => {
+        const msg = await gmail.users.messages.get({
+          userId: "me",
+          id: message.id!,
+        });
+        const headers = msg.data.payload?.headers;
+        const subject = headers?.find((header) => header.name === "Subject")?.value || "";
+        const from = headers?.find((header) => header.name === "From")?.value || "";
+        return {
+          id: msg.data.id,
+          subject,
+          from,
+          snippet: msg.data.snippet,
+        };
+      })
+    );
 
     return NextResponse.json({ emails });
   } catch (error) {
-    console.error('Error fetching sent emails:', error);
-    return NextResponse.json({ error: 'Failed to fetch sent emails' }, { status: 500 });
+    console.error("Error fetching emails:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch emails" },
+      { status: 500 }
+    );
   }
 }

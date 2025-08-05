@@ -41,3 +41,4 @@ yarn-error.log*
 next-env.d.ts
 
 youtube.json
+/src/app/api/user_profiles/

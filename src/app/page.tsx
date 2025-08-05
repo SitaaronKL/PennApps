@@ -1,7 +1,6 @@
 "use client"
 import { useState } from 'react';
-import { signIn, signOut } from 'next-auth/react';
-import { Session } from 'next-auth';
+import { useSession, signIn, signOut } from 'next-auth/react';
 
 interface Email {
   id: string;
@@ -11,30 +10,14 @@ interface Email {
 }
 
 export default function Home() {
-  const [session] = useState<Session | null>(null);
+  const { data: session } = useSession();
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [emails, setEmails] = useState<Email[]>([]);
-  const [isFetchingEmails, setIsFetchingEmails] = useState(false);
 
   const handleAnalysis = async () => {
     setIsLoading(true);
     setAnalysis(null);
     try {
-      // Fetch emails first
-      const emailRes = await fetch('/api/gmail');
-      const emailData = await emailRes.json();
-      setEmails(emailData.emails || []);
-
-      // Save emails to a file
-      await fetch('/api/save-emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailData.emails || []),
-      });
-
       // Now, perform the analysis (we can adapt this part later)
       const res = await fetch('/api/youtube');
       const data = await res.json();
@@ -46,18 +29,7 @@ export default function Home() {
     setIsLoading(false);
   };
 
-  const handleFetchEmails = async () => {
-    setIsFetchingEmails(true);
-    setEmails([]);
-    try {
-      const res = await fetch('/api/gmail');
-      const data = await res.json();
-      setEmails(data.messages || []);
-    } catch (error) {
-      console.error('Error fetching emails:', error);
-    }
-    setIsFetchingEmails(false);
-  };
+  
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 md:p-24 bg-gray-900 text-white">
@@ -88,9 +60,6 @@ export default function Home() {
               <button onClick={handleAnalysis} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-300 ease-in-out" disabled={isLoading}>
                 {isLoading ? 'Analyzing...' : 'Reveal My Profile'}
               </button>
-              <button onClick={handleFetchEmails} className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-300 ease-in-out" disabled={isFetchingEmails}>
-                {isFetchingEmails ? 'Fetching Emails...' : 'Fetch Sent Emails'}
-              </button>
             </div>
           </div>
 
@@ -104,27 +73,6 @@ export default function Home() {
             <div className="w-full mx-auto p-8 mt-8 bg-gray-800 rounded-lg shadow-lg">
               <h2 className="text-3xl font-bold text-center mb-6">Your Digital Fingerprint</h2>
               <p className="text-left whitespace-pre-wrap text-gray-300">{analysis}</p>
-            </div>
-          )}
-
-          {isFetchingEmails && (
-            <div className="w-full max-w-2xl mx-auto p-8 mt-8 text-center">
-              <p className="text-lg text-gray-400">Fetching emails...</p>
-            </div>
-          )}
-
-          {emails.length > 0 && (
-            <div className="w-full mx-auto p-8 mt-8 bg-gray-800 rounded-lg shadow-lg">
-              <h2 className="text-3xl font-bold text-center mb-6">Sent Emails</h2>
-              <ul>
-                {emails.map((email) => (
-                  <li key={email.id} className="border-b border-gray-700 py-4">
-                    <p className="font-bold text-lg">{email.subject}</p>
-                    <p className="text-gray-400">From: {email.from}</p>
-                    <p className="text-gray-300 mt-2">{email.snippet}</p>
-                  </li>
-                ))}
-              </ul>
             </div>
           )}
         </div>
