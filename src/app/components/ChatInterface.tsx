@@ -41,7 +41,7 @@ const ChatInterface: React.FC = () => {
       const data = await response.json();
       const aiMessage: Message = { type: 'ai', text: data.answer };
       setMessages((prev) => [...prev, aiMessage]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error sending message:', error);
       setMessages((prev) => [...prev, { type: 'ai', text: 'Error: Could not get a response.' }]);
     } finally {
@@ -55,9 +55,9 @@ const ChatInterface: React.FC = () => {
       <div className="h-96 overflow-y-auto border border-gray-700 p-4 mb-6 bg-gray-800 rounded-lg flex flex-col space-y-4 shadow-inner">
         {messages.length === 0 && (
           <p className="text-gray-400 text-center mt-auto mb-auto text-lg leading-relaxed">
-            Hello! I'm your Digital Fingerprint AI. Ask me anything about your YouTube activity (subscriptions, liked videos, watch later, playlists) or your sent emails. For example, try asking: <br/>
-            <span className="font-semibold text-purple-300">"What are my main interests based on my subscriptions?"</span> or <br/>
-            <span className="font-semibold text-purple-300">"Can you tell me about my communication style from my sent emails?"</span>
+            Hello! I&apos;m your Digital Fingerprint AI. Ask me anything about your YouTube activity (subscriptions, liked videos, watch later, playlists) or your sent emails. For example, try asking: <br/>
+            <span className="font-semibold text-purple-300">&quot;What are my main interests based on my subscriptions?&quot;</span> or <br/>
+            <span className="font-semibold text-purple-300">&quot;Can you tell me about my communication style from my sent emails?&quot;</span>
           </p>
         )}
         {messages.map((msg, index) => (

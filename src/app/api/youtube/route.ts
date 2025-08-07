@@ -217,7 +217,7 @@ export async function GET(req: NextRequest) {
       if (JSON.stringify(existingProfile.fingerprint) === JSON.stringify(newDigitalFingerprint)) {
         return NextResponse.json({ analysis: existingProfile.analysis });
       }
-    } catch (error) {
+    } catch (_error) { // eslint-disable-line @typescript-eslint/no-unused-vars
       // No existing profile, so we'll generate a new one
     }
 
@@ -267,7 +267,11 @@ export async function GET(req: NextRequest) {
       3.  **Ideal Partner:** A description of the user's ideal partner.
 
       **Revolutionary Scoring Chart:**
-      Finally, create a "Revolutionary Scoring Chart" that reveals hidden insights about the user. Instead of traditional scoring, use the data to create a unique and insightful chart that highlights the user's core characteristics and potential for growth. This should be something special and not seen before. For example, you could use a spider chart to visualize the user's "Intellectual Curiosity," "Creative Expression," "Spontaneity," "Emotional Depth," and "Sense of Humor." Or, you could create a "Personality Spectrum" that shows where the user falls on a range of different traits. Be creative and insightful.
+      Finally, create a "Revolutionary Scoring Chart" that reveals hidden insights about the user. Instead of traditional scoring, use the data to create a unique and insightful chart that highlights the user's core characteristics and potential for growth. This should be something special and not seen before.
+
+      - For example, you could use a spider chart to visualize the user's "Intellectual Curiosity," "Creative Expression," "Spontaneity," "Emotional Depth," and "Sense of Humor."
+      - Or, you could create a "Personality Spectrum" that shows where the user falls on a range of different traits.
+      - Be creative and insightful.
     `;
     const genAI = new GoogleGenerativeAI(
       process.env.GEMINI_API_KEY as string
@@ -286,11 +290,11 @@ export async function GET(req: NextRequest) {
     await fs.writeFile(userProfilePath, JSON.stringify(userProfile, null, 2));
 
     return NextResponse.json({ analysis });
-  } catch (error) {
-    console.error(error);
-    console.error("Error in youtube route:", error);
+  } catch (_error: unknown) {
+    console.error(_error);
+    console.error("Error in youtube route:", _error);
     return NextResponse.json(
-      { error: "Failed to fetch YouTube data or infer profile", details: error.message },
+      { error: "Failed to fetch YouTube data or infer profile", details: _error instanceof Error ? _error.message : String(_error) },
       { status: 500 }
     );
   }

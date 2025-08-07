@@ -4,12 +4,7 @@ import { useState } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import ChatInterface from '@/app/components/ChatInterface';
 
-interface Email {
-  id: string;
-  subject: string;
-  from: string;
-  snippet: string;
-}
+
 
 export default function Home() {
   const { data: session } = useSession();

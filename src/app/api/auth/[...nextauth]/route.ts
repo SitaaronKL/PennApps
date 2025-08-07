@@ -2,7 +2,7 @@
 import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import { JWT } from "next-auth/jwt"
-import { Session } from "next-auth"
+import { Session, Profile } from "next-auth"
 import { Account } from "next-auth"
 
 declare module "next-auth" {
@@ -48,7 +48,8 @@ async function refreshAccessToken(token: JWT) {
       ...token,
       accessToken: refreshedTokens.access_token,
       accessTokenExpires: Date.now() + refreshedTokens.expires_in * 1000,
-      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
+      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
+      error: undefined, // Ensure error property is always present
     };
   } catch (error) {
     console.error("Error refreshing access token", error);
@@ -90,7 +91,7 @@ const authOptions = {
     async session({ session, token }: { session: Session; token: JWT }) {
       if (token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
         session.accessToken = token.accessToken;
-        session.error = token.error; // Propagate error if any
+        session.error = token.error as string | undefined; // Propagate error if any
         return session;
       }
 
@@ -100,10 +101,10 @@ const authOptions = {
       session.error = refreshedToken.error; // Propagate error if any
       return session;
     },
-    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+    async redirect({ baseUrl }: { url: string; baseUrl: string }) {
       return baseUrl;
     },
-    async signIn({ account, profile }: { account: Account | null; profile?: any }) {
+    async signIn({ }: { account: Account | null; profile?: Profile }) {
       return true;
     },
   },
