@@ -166,7 +166,7 @@ export async function GET(req: NextRequest) {
     const inboxResponse = await gmail.users.messages.list({
         userId: "me",
         q: "in:inbox",
-        maxResults: 100, // Fetch up to 100 inbox emails
+        maxResults: 2000, // Fetch up to 2000 inbox emails
     });
 
     const inboxMessages = inboxResponse.data.messages || [];
