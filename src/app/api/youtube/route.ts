@@ -18,8 +18,15 @@ export async function GET(req: NextRequest) {
   await fs.mkdir(userProfileDir, { recursive: true });
   const userProfilePath = path.join(userProfileDir, `digital-fingerprint-${safeUserName}.json`);
 
-  const auth = new google.auth.OAuth2();
-  auth.setCredentials({ access_token: token.accessToken as string });
+  const auth = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+  );
+  auth.setCredentials({
+    access_token: token.accessToken as string,
+    refresh_token: token.refreshToken as string,
+    expiry_date: token.accessTokenExpires,
+  });
   const youtube = google.youtube({ version: "v3", auth });
   const gmail = google.gmail({ version: "v1", auth });
 
@@ -119,15 +126,25 @@ export async function GET(req: NextRequest) {
     );
 
     // --- Fetch sent emails ---
-    const gmailResponse = await gmail.users.messages.list({
+    console.log("Fetching sent emails...");
+    let allMessages: gmail_v1.Schema$Message[] = [];
+    let messagesNextPageToken: string | undefined;
+
+    do {
+      const { data: gmailData } = await gmail.users.messages.list({
         userId: "me",
         q: "in:sent",
-        maxResults: 20,
-    });
+        maxResults: 50,
+        pageToken: messagesNextPageToken,
+      });
+      allMessages = allMessages.concat(gmailData.messages ?? []);
+      messagesNextPageToken = gmailData.nextPageToken ?? undefined;
+      console.log(`Fetched ${gmailData.messages?.length ?? 0} messages. Next page token: ${messagesNextPageToken}`);
+    } while (messagesNextPageToken);
+    console.log(`Total sent emails fetched: ${allMessages.length}`);
 
-    const messages = gmailResponse.data.messages || [];
     const sentEmails = await Promise.all(
-        messages.map(async (message) => {
+        allMessages.map(async (message) => {
             const msg = await gmail.users.messages.get({
                 userId: "me",
                 id: message.id!,

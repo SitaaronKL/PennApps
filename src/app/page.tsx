@@ -1,6 +1,8 @@
 "use client"
+
 import { useState } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
+import ChatInterface from '@/app/components/ChatInterface';
 
 interface Email {
   id: string;
@@ -74,6 +76,10 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-center mb-6">Your Digital Fingerprint</h2>
               <p className="text-left whitespace-pre-wrap text-gray-300">{analysis}</p>
             </div>
+          )}
+
+          {analysis && (
+            <ChatInterface />
           )}
         </div>
       )}
