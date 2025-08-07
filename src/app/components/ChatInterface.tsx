@@ -1,4 +1,4 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useRef, useEffect } from 'react';
 
 interface Message {
   type: 'user' | 'ai';
@@ -9,12 +9,15 @@ const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  console.log("ChatInterface rendered. Loading state:", loading);
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log("handleSubmit called. Input:", input);
     if (!input.trim()) return;
 
     const userMessage: Message = { type: 'user', text: input };
@@ -47,39 +50,43 @@ const ChatInterface: React.FC = () => {
   };
 
   return (
-    <div className="mt-8 p-4 border rounded-lg shadow-lg bg-white">
-      <h2 className="text-2xl font-bold mb-4">Ask About Your Digital Fingerprint</h2>
-      <div className="h-64 overflow-y-auto border p-3 mb-4 bg-gray-50 rounded-md">
+    <div className="mt-8 p-6 border border-gray-700 rounded-xl shadow-2xl bg-gray-900 text-white max-w-4xl mx-auto font-sans">
+      <h2 className="text-3xl font-extrabold mb-6 text-center text-purple-400">Digital Fingerprint AI Chat</h2>
+      <div className="h-96 overflow-y-auto border border-gray-700 p-4 mb-6 bg-gray-800 rounded-lg flex flex-col space-y-4 shadow-inner">
         {messages.length === 0 && (
-          <p className="text-gray-500">Ask me anything about your YouTube activity or sent emails!</p>
+          <p className="text-gray-400 text-center mt-auto mb-auto text-lg leading-relaxed">
+            Hello! I'm your Digital Fingerprint AI. Ask me anything about your YouTube activity (subscriptions, liked videos, watch later, playlists) or your sent emails. For example, try asking: <br/>
+            <span className="font-semibold text-purple-300">"What are my main interests based on my subscriptions?"</span> or <br/>
+            <span className="font-semibold text-purple-300">"Can you tell me about my communication style from my sent emails?"</span>
+          </p>
         )}
         {messages.map((msg, index) => (
           <div
             key={index}
-            className={`mb-2 p-2 rounded-lg ${msg.type === 'user' ? 'bg-blue-100 text-right ml-auto' : 'bg-gray-200 text-left mr-auto'}`}
-            style={{ maxWidth: '80%' }}
+            className={`p-4 rounded-xl shadow-lg max-w-[85%] ${msg.type === 'user' ? 'bg-blue-700 text-white self-end rounded-br-none' : 'bg-gray-700 text-gray-100 self-start rounded-bl-none'}`}
           >
             {msg.text}
           </div>
         ))}
         {loading && (
-          <div className="text-center text-gray-500">
+          <div className="self-center text-purple-400 animate-pulse text-lg">
             Thinking...
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
-      <form onSubmit={handleSubmit} className="flex">
+      <form onSubmit={handleSubmit} className="flex gap-3">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your question here..."
-          className="flex-grow p-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Ask a question about your digital fingerprint..."
+          className="flex-grow p-4 rounded-xl border border-gray-700 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg"
           disabled={loading}
         />
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold transition-colors duration-200"
           disabled={loading}
         >
           Send

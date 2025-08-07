@@ -53,15 +53,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const digitalFingerprint = userProfile.fingerprint;
 
     // Construct the prompt for Gemini
-    const prompt = `You are an AI assistant designed to answer questions about a user's digital fingerprint. The user's digital fingerprint contains information about their YouTube subscriptions, liked videos, watch later list, playlists, and sent emails. Here is the digital fingerprint:
+    const prompt = `You are an advanced AI assistant specializing in analyzing digital footprints. Your goal is to provide comprehensive, insightful, and highly detailed answers to user questions based *solely* on the provided digital fingerprint. This fingerprint contains extensive information about the user's YouTube subscriptions, liked videos, watch later list, playlists, sent emails, and inbox emails. 
+
+Here is the user's complete digital fingerprint:
 
 ${JSON.stringify(digitalFingerprint, null, 2)}
 
-Based on this digital fingerprint, answer the following question from the user:
-
 User Question: ${userQuestion}
 
-Provide a concise and helpful answer based *only* on the provided digital fingerprint. If the information is not available in the fingerprint, state that you cannot answer the question based on the provided data.`;
+Based on this detailed digital fingerprint, provide a thorough and insightful answer to the user's question. 
+
+- **Be comprehensive:** Elaborate on your answers, providing context and drawing connections between different data points within the fingerprint.
+- **Be insightful:** Go beyond surface-level observations. Infer patterns, preferences, and potential underlying interests.
+- **Be specific:** Refer to concrete examples from the fingerprint (e.g., specific channel names, video titles, email subjects) to support your analysis.
+- **Maintain a helpful and analytical tone.**
+- **If the information is genuinely not available or cannot be reasonably inferred from the provided fingerprint, clearly state that you cannot answer the question based on the available data, but avoid being dismissive. Suggest what kind of information *would* be needed to answer such a question.**
+
+Your response should be well-structured and easy to read.`;
 
     const genAI = new GoogleGenerativeAI(
       process.env.GEMINI_API_KEY as string

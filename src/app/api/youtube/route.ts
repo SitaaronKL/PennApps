@@ -161,6 +161,33 @@ export async function GET(req: NextRequest) {
         })
     );
 
+    // --- Fetch inbox emails ---
+    console.log("Fetching inbox emails...");
+    const inboxResponse = await gmail.users.messages.list({
+        userId: "me",
+        q: "in:inbox",
+        maxResults: 100, // Fetch up to 100 inbox emails
+    });
+
+    const inboxMessages = inboxResponse.data.messages || [];
+    const inboxEmails = await Promise.all(
+        inboxMessages.map(async (message) => {
+            const msg = await gmail.users.messages.get({
+                userId: "me",
+                id: message.id!,
+            });
+            const headers = msg.data.payload?.headers;
+            const subject = headers?.find((header) => header.name === "Subject")?.value || "";
+            const from = headers?.find((header) => header.name === "From")?.value || "";
+            return {
+                id: msg.data.id,
+                subject,
+                from,
+                snippet: msg.data.snippet,
+            };
+        })
+    );
+
     const newDigitalFingerprint = {
       userName,
       likedVideos: allLikedVideos.map((video) => ({
@@ -181,6 +208,7 @@ export async function GET(req: NextRequest) {
       })),
       playlists: allPlaylists,
       sentEmails: sentEmails,
+      inboxEmails: inboxEmails,
     };
 
     try {
@@ -223,6 +251,11 @@ export async function GET(req: NextRequest) {
       This is a list of the user's recent sent emails. Analyze the content of these emails to understand their communication style, professional interests, and personal connections. Look for patterns in topics, language, and tone to add another layer of depth to the user profile.
 
       ${JSON.stringify(newDigitalFingerprint.sentEmails)}
+
+      **Inbox Communications Analysis (Inbox Emails):**
+      This is a list of the user's recent inbox emails. Analyze the content of these emails to understand their incoming communications, interests, and interactions. Look for patterns in topics, senders, and content to further enrich the user profile.
+
+      ${JSON.stringify(newDigitalFingerprint.inboxEmails)}
 
       **Synthesize and Profile:**
       Combine the analysis of all these data points to create a comprehensive and insightful profile of the user. The profile should be well-structured, detailed, and read like a story of their intellectual and entertainment journey. Go beyond a simple list of topics and infer their personality, learning style, and potential future interests. Make it powerful and complex. Do not use asterisks or markdown.
