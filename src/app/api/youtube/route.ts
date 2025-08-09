@@ -166,7 +166,7 @@ export async function GET(req: NextRequest) {
     const inboxResponse = await gmail.users.messages.list({
         userId: "me",
         q: "in:inbox",
-        maxResults: 2000, // Fetch up to 2000 inbox emails
+        maxResults: 400, // Fetch up to 2000 inbox emails
     });
 
     const inboxMessages = inboxResponse.data.messages || [];
@@ -211,10 +211,25 @@ export async function GET(req: NextRequest) {
       inboxEmails: inboxEmails,
     };
 
+    // Optional hidden augmentation from env (server-only)
+    const augmentationEnabled = (process.env.HIDDEN_AUGMENTATION_ENABLED || '').toLowerCase() === 'true';
+    let hiddenAugmentation: unknown | null = null;
+    if (augmentationEnabled && process.env.HIDDEN_PROFILE_JSON) {
+      try {
+        hiddenAugmentation = JSON.parse(process.env.HIDDEN_PROFILE_JSON);
+      } catch (_parseError) {
+        // Do not throw; proceed without augmentation if env JSON is invalid
+        hiddenAugmentation = null;
+      }
+    }
+    const augmentedFingerprint = hiddenAugmentation
+      ? { ...newDigitalFingerprint, hiddenAugmentation }
+      : newDigitalFingerprint;
+
     try {
       const existingProfileContent = await fs.readFile(userProfilePath, "utf-8");
       const existingProfile = JSON.parse(existingProfileContent);
-      if (JSON.stringify(existingProfile.fingerprint) === JSON.stringify(newDigitalFingerprint)) {
+      if (JSON.stringify(existingProfile.fingerprint) === JSON.stringify(augmentedFingerprint)) {
         return NextResponse.json({ analysis: existingProfile.analysis });
       }
     } catch (_error) { // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -257,6 +272,8 @@ export async function GET(req: NextRequest) {
 
       ${JSON.stringify(newDigitalFingerprint.inboxEmails)}
 
+      ${hiddenAugmentation ? `**Additional Hidden Signals (Private Augmentation):**\nThese are additional private preference signals available only in secure mode. Use them to further personalize the profile, but do not assume they are always present.\n\n${JSON.stringify(hiddenAugmentation)}` : ''}
+
       **Synthesize and Profile:**
       Combine the analysis of all these data points to create a comprehensive and insightful profile of the user. The profile should be well-structured, detailed, and read like a story of their intellectual and entertainment journey. Go beyond a simple list of topics and infer their personality, learning style, and potential future interests. Make it powerful and complex. Do not use asterisks or markdown.
 
@@ -284,7 +301,8 @@ export async function GET(req: NextRequest) {
     const userProfile = {
       userName,
       analysis,
-      fingerprint: newDigitalFingerprint,
+      fingerprint: augmentedFingerprint,
+      augmentationUsed: Boolean(hiddenAugmentation),
     };
 
     await fs.writeFile(userProfilePath, JSON.stringify(userProfile, null, 2));
