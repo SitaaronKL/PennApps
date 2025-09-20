@@ -170,21 +170,123 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-900 text-white">
+    <main className="min-h-screen bg-gray-50">
       {!session ? (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <h1 className="text-5xl font-bold mb-4">Hinge 2</h1>
-            <p className="text-xl text-gray-400 mb-8">
-              Find people who share your actual personality.
-            </p>
-            <button 
-              onClick={() => signIn('google')} 
-              className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-8 rounded-xl transition-colors duration-300"
-            >
-              Start Dating with Hinge 2
-            </button>
-          </div>
+        <div className="min-h-screen bg-gray-50">
+          {/* Header */}
+          <header className="flex items-center justify-between px-8 py-4 bg-white shadow-sm">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xl">💖</span>
+              </div>
+            </div>
+            
+            {/* Navigation */}
+            <nav className="hidden md:flex items-center gap-8">
+              <a href="#features" className="text-gray-600 hover:text-gray-900 font-medium">Features</a>
+              <a href="#about" className="text-gray-600 hover:text-gray-900 font-medium">About</a>
+              <a href="#safety" className="text-gray-600 hover:text-gray-900 font-medium">Safety</a>
+              <a href="#contact" className="text-gray-600 hover:text-gray-900 font-medium">Contact</a>
+            </nav>
+            
+            {/* Auth Buttons */}
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => signIn('google')}
+                className="text-gray-600 hover:text-gray-900 font-medium"
+              >
+                Log In
+              </button>
+              <button 
+                onClick={() => signIn('google')}
+                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-full transition-all duration-300"
+              >
+                Sign Up
+              </button>
+            </div>
+          </header>
+
+          {/* Hero Section */}
+          <section className="flex flex-col items-center justify-center px-8 py-20 text-center">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute top-20 left-10 w-32 h-32 bg-pink-100 rounded-full opacity-20"></div>
+              <div className="absolute top-40 right-20 w-24 h-24 bg-purple-100 rounded-full opacity-30"></div>
+              <div className="absolute bottom-40 left-20 w-20 h-20 bg-pink-200 rounded-full opacity-25"></div>
+              <div className="absolute bottom-20 right-10 w-36 h-36 bg-purple-100 rounded-full opacity-20"></div>
+            </div>
+            
+            <div className="relative z-10 max-w-4xl mx-auto">
+              {/* Main Title */}
+              <h1 className="text-6xl font-bold mb-6">
+                <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                  TasteMatch
+                </span>
+              </h1>
+              
+              {/* Subtitle */}
+              <h2 className="text-4xl font-bold text-gray-800 mb-8">
+                Find Your Perfect Match
+              </h2>
+              
+              {/* Description */}
+              <p className="text-xl text-gray-600 mb-16 max-w-2xl mx-auto leading-relaxed">
+                It's basically Hinge but with your actual personality via your Youtube usage.
+              </p>
+              
+              {/* Features Grid */}
+              <div className="grid md:grid-cols-3 gap-12 mb-16">
+                <div className="flex flex-col items-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center mb-4">
+                    <span className="text-white text-2xl">👥</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Smart Matching</h3>
+                  <p className="text-gray-600 text-center">Advanced AI analyzes your personality to find compatible matches</p>
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                    <span className="text-white text-2xl">💬</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Safe Chat</h3>
+                  <p className="text-gray-600 text-center">Secure messaging with verified profiles and safety features</p>
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-pink-600 to-purple-500 rounded-full flex items-center justify-center mb-4">
+                    <span className="text-white text-2xl">⭐</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Real Connections</h3>
+                  <p className="text-gray-600 text-center">Quality over quantity - meaningful relationships that last</p>
+                </div>
+              </div>
+              
+              {/* CTA Button */}
+              <button 
+                onClick={() => signIn('google')}
+                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
+              >
+                Get Started
+              </button>
+              
+              {/* Trust Indicators */}
+              <div className="flex flex-wrap justify-center items-center gap-8 mt-16 text-gray-500">
+                <div className="flex items-center gap-2">
+                  <span>✓</span>
+                  <span>100% Free to Join</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>✓</span>
+                  <span>Safe & Secure</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>✓</span>
+                  <span>Real Profiles</span>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       ) : (
         <div className="p-8">
