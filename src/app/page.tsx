@@ -15,6 +15,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'setup' | 'profile' | 'swipe' | 'matches'>('setup');
   const [hasProfile, setHasProfile] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   // Check for existing profile when user signs in
   useEffect(() => {
     if (session?.user) {
@@ -380,6 +381,9 @@ export default function Home() {
                     }}
                     onContinue={() => setCurrentView('swipe')}
                     onSignOut={() => signOut()}
+                    onProfileUpdate={(updatedData) => setProfileData(updatedData)}
+                    isEditing={isEditingProfile}
+                    onEditToggle={() => setIsEditingProfile(!isEditingProfile)}
                   />
                 </div>
               )}

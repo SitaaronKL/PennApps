@@ -99,3 +99,64 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export async function PUT(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    
+    const { 
+      core_traits, 
+      potential_career_interests, 
+      dream_date_profile, 
+      ideal_date, 
+      ideal_partner, 
+      unique_scoring_chart, 
+      summary, 
+      core_personality_traits, 
+      interests 
+    } = body;
+
+    console.log('Updating profile for user:', token.name);
+    console.log('Updated profile data:', body);
+
+    // Update existing user profile
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        core_traits,
+        potential_career_interests,
+        dream_date_profile,
+        ideal_date,
+        ideal_partner,
+        unique_scoring_chart,
+        summary,
+        core_personality_traits,
+        interests
+      })
+      .eq('google_id', token.sub)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase update error:', error);
+      return NextResponse.json(
+        { error: "Database error", details: error.message },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Profile updated successfully in Supabase:', data);
+    return NextResponse.json({ success: true, user: data });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return NextResponse.json(
+      { error: "Failed to update profile", details: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
+  }
+}

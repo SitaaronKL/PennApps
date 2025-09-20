@@ -20,14 +20,75 @@ interface ProfileCardsProps {
   };
   onContinue: () => void;
   onSignOut?: () => void;
+  onProfileUpdate?: (updatedData: any) => void;
+  onEditToggle?: () => void;
+  isEditing?: boolean;
 }
 
-export default function ProfileCards({ profileData, userInfo, onContinue, onSignOut }: ProfileCardsProps) {
+export default function ProfileCards({ profileData, userInfo, onContinue, onSignOut, onProfileUpdate, isEditing = false, onEditToggle }: ProfileCardsProps) {
   const [mounted, setMounted] = useState(false);
+  const [editedData, setEditedData] = useState(profileData);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    setEditedData(profileData);
+  }, [profileData]);
+
+  const handleCancel = () => {
+    // Reset to original data
+    setEditedData(profileData);
+    if (onEditToggle) {
+      onEditToggle();
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    console.log('🔄 Starting profile save...', editedData);
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/profiles', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editedData),
+      });
+
+      console.log('📡 API Response:', response.status, response.statusText);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Profile updated successfully:', result);
+        if (onProfileUpdate) {
+          onProfileUpdate(editedData);
+        }
+        if (onEditToggle) {
+          onEditToggle();
+        }
+        alert('✅ Profile updated successfully!');
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Update failed:', errorText);
+        alert('Failed to update profile. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error updating profile:', error);
+      alert('Error updating profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleFieldChange = (field: string, value: string) => {
+    setEditedData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   if (!mounted) {
     return (
@@ -54,21 +115,55 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
       {/* Profile Header */}
       <div className="bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-600 rounded-3xl shadow-2xl p-8 mb-8 text-white relative overflow-hidden">
         <div className="relative z-10">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-white/30 shadow-xl">
-              {userInfo.avatar_url ? (
-                <img src={userInfo.avatar_url} alt={userInfo.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl">👤</div>
-              )}
-            </div>
-            <div className="text-center md:text-left">
-              <h1 className="text-4xl font-bold mb-2">{userInfo.name}</h1>
-              <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">✨ AI Analyzed</span>
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">🎯 Personality Matched</span>
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">💖 Ready to Date</span>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-white/30 shadow-xl">
+                {userInfo.avatar_url ? (
+                  <img src={userInfo.avatar_url} alt={userInfo.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl">👤</div>
+                )}
               </div>
+              <div className="text-center md:text-left">
+                <h1 className="text-4xl font-bold mb-2">{userInfo.name}</h1>
+                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                  <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">✨ AI Analyzed</span>
+                  <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">🎯 Personality Matched</span>
+                  <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">💖 Ready to Date</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Edit/Save/Cancel Buttons */}
+            <div className="flex items-center gap-3">
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={handleSaveChanges}
+                    disabled={isSaving}
+                    className="bg-white/20 hover:bg-white/30 disabled:bg-white/10 backdrop-blur-sm text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 flex items-center gap-2"
+                  >
+                    <span>💾</span>
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                    className="bg-white/10 hover:bg-white/20 disabled:bg-white/5 backdrop-blur-sm text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 flex items-center gap-2"
+                  >
+                    <span>❌</span>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={onEditToggle}
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 flex items-center gap-2"
+                >
+                  <span>✏️</span>
+                  Edit Profile
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -95,7 +190,16 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
                 <p className="text-sm text-gray-500">Your personality summary</p>
               </div>
             </div>
-            <p className="text-gray-700 leading-relaxed">{profileData.summary}</p>
+            {isEditing ? (
+              <textarea
+                value={editedData.summary}
+                onChange={(e) => handleFieldChange('summary', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 leading-relaxed resize-none"
+                rows={3}
+              />
+            ) : (
+              <p className="text-gray-700 leading-relaxed">{editedData.summary}</p>
+            )}
           </div>
         </div>
 
@@ -111,7 +215,16 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
                 <p className="text-sm text-gray-500">What makes you unique</p>
               </div>
             </div>
-            <p className="text-gray-700 leading-relaxed">{profileData.core_traits}</p>
+            {isEditing ? (
+              <textarea
+                value={editedData.core_traits}
+                onChange={(e) => handleFieldChange('core_traits', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 leading-relaxed resize-none"
+                rows={3}
+              />
+            ) : (
+              <p className="text-gray-700 leading-relaxed">{editedData.core_traits}</p>
+            )}
           </div>
         </div>
 
@@ -127,7 +240,16 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
                 <p className="text-sm text-gray-500">Things you're passionate about</p>
               </div>
             </div>
-            <p className="text-gray-700 leading-relaxed">{profileData.interests}</p>
+            {isEditing ? (
+              <textarea
+                value={editedData.interests}
+                onChange={(e) => handleFieldChange('interests', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 leading-relaxed resize-none"
+                rows={3}
+              />
+            ) : (
+              <p className="text-gray-700 leading-relaxed">{editedData.interests}</p>
+            )}
           </div>
         </div>
 
@@ -143,7 +265,16 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
                 <p className="text-sm text-gray-500">Professional aspirations</p>
               </div>
             </div>
-            <p className="text-gray-700 leading-relaxed">{profileData.potential_career_interests}</p>
+            {isEditing ? (
+              <textarea
+                value={editedData.potential_career_interests}
+                onChange={(e) => handleFieldChange('potential_career_interests', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 leading-relaxed resize-none"
+                rows={3}
+              />
+            ) : (
+              <p className="text-gray-700 leading-relaxed">{editedData.potential_career_interests}</p>
+            )}
           </div>
         </div>
 
@@ -159,7 +290,16 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
                 <p className="text-sm text-gray-500">How you approach dating</p>
               </div>
             </div>
-            <p className="text-gray-700 leading-relaxed">{profileData.dream_date_profile}</p>
+            {isEditing ? (
+              <textarea
+                value={editedData.dream_date_profile}
+                onChange={(e) => handleFieldChange('dream_date_profile', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 leading-relaxed resize-none"
+                rows={3}
+              />
+            ) : (
+              <p className="text-gray-700 leading-relaxed">{editedData.dream_date_profile}</p>
+            )}
           </div>
         </div>
 
@@ -175,7 +315,16 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
                 <p className="text-sm text-gray-500">Your ideal romantic experience</p>
               </div>
             </div>
-            <p className="text-gray-700 leading-relaxed">{profileData.ideal_date}</p>
+            {isEditing ? (
+              <textarea
+                value={editedData.ideal_date}
+                onChange={(e) => handleFieldChange('ideal_date', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 leading-relaxed resize-none"
+                rows={3}
+              />
+            ) : (
+              <p className="text-gray-700 leading-relaxed">{editedData.ideal_date}</p>
+            )}
           </div>
         </div>
 
@@ -191,7 +340,16 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
                 <p className="text-sm text-gray-500">Your ideal partner</p>
               </div>
             </div>
-            <p className="text-gray-700 leading-relaxed">{profileData.ideal_partner}</p>
+            {isEditing ? (
+              <textarea
+                value={editedData.ideal_partner}
+                onChange={(e) => handleFieldChange('ideal_partner', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 leading-relaxed resize-none"
+                rows={3}
+              />
+            ) : (
+              <p className="text-gray-700 leading-relaxed">{editedData.ideal_partner}</p>
+            )}
           </div>
         </div>
 
@@ -207,7 +365,16 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
                 <p className="text-sm text-gray-500">Deep personality analysis</p>
               </div>
             </div>
-            <p className="text-gray-700 leading-relaxed">{profileData.core_personality_traits}</p>
+            {isEditing ? (
+              <textarea
+                value={editedData.core_personality_traits}
+                onChange={(e) => handleFieldChange('core_personality_traits', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 leading-relaxed resize-none"
+                rows={3}
+              />
+            ) : (
+              <p className="text-gray-700 leading-relaxed">{editedData.core_personality_traits}</p>
+            )}
           </div>
         </div>
 
@@ -223,7 +390,16 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
                 <p className="text-sm text-gray-500">How you match with others</p>
               </div>
             </div>
-            <p className="text-gray-700 leading-relaxed">{profileData.unique_scoring_chart}</p>
+            {isEditing ? (
+              <textarea
+                value={editedData.unique_scoring_chart}
+                onChange={(e) => handleFieldChange('unique_scoring_chart', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 leading-relaxed resize-none"
+                rows={4}
+              />
+            ) : (
+              <p className="text-gray-700 leading-relaxed">{editedData.unique_scoring_chart}</p>
+            )}
           </div>
         </div>
       </div>
@@ -251,16 +427,6 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
             <span>🔄</span>
             Refresh Profile
           </button>
-          
-          {/* {onSignOut && (
-            <button
-              onClick={onSignOut}
-              className="bg-red-500 hover:bg-red-600 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 text-lg flex items-center justify-center gap-2"
-            >
-              <span>🚪</span>
-              Sign Out
-            </button>
-          )} */}
         </div>
         
         <div className="mt-6 flex justify-center gap-4 text-sm text-gray-500">
@@ -278,6 +444,7 @@ export default function ProfileCards({ profileData, userInfo, onContinue, onSign
           </span>
         </div>
       </div>
+
     </div>
   );
 }
