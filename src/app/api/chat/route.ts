@@ -1,6 +1,6 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// Replaced Gemini with Cerebras chat completions via REST API
 import fs from "fs/promises";
 import path from "path";
 
@@ -70,14 +70,42 @@ Based on this detailed digital fingerprint, provide a thorough and insightful an
 - **If the information is genuinely not available or cannot be reasonably inferred from the provided fingerprint, clearly state that you cannot answer the question based on the available data, but avoid being dismissive. Suggest what kind of information *would* be needed to answer such a question.**
 
 Your response should be well-structured and easy to read.`;
+    const apiKey = process.env.CEREBRAS_API_KEY as string | undefined;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "Server misconfiguration: missing CEREBRAS_API_KEY" },
+        { status: 500 }
+      );
+    }
 
-    const genAI = new GoogleGenerativeAI(
-      process.env.GEMINI_API_KEY as string
-    );
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
-    const result = await model.generateContent(prompt);
-    const geminiResponse = await result.response;
-    const answer = geminiResponse.text();
+    const model = process.env.CEREBRAS_MODEL || "llama-4-scout-17b-16e-instruct";
+
+    const resp = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "user", content: prompt },
+        ],
+      }),
+    });
+
+    if (!resp.ok) {
+      const details = await resp.text();
+      return NextResponse.json(
+        { error: "Cerebras API error", details },
+        { status: 502 }
+      );
+    }
+
+    const data = await resp.json() as {
+      choices?: Array<{ message?: { content?: string }, text?: string }>;
+    };
+    const answer = data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? "";
 
     return NextResponse.json({ answer });
 
