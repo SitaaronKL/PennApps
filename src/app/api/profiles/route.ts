@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import db, { User, UserProfile } from "@/lib/db";
+import { supabase } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -10,41 +10,56 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { subs, likes, pref_vec } = body;
+    const { 
+      core_traits, 
+      potential_career_interests, 
+      dream_date_profile, 
+      ideal_date, 
+      ideal_partner, 
+      unique_scoring_chart, 
+      summary, 
+      core_personality_traits, 
+      interests 
+    } = body;
 
-    // First, ensure user exists
-    const userResult = await db.query(
-      `INSERT INTO app_users (google_id, email, name, avatar_url) 
-       VALUES ($1, $2, $3, $4) 
-       ON CONFLICT (google_id) DO UPDATE SET 
-         email = EXCLUDED.email,
-         name = EXCLUDED.name,
-         avatar_url = EXCLUDED.avatar_url
-       RETURNING id`,
-      [token.sub, token.email, token.name, token.picture]
-    );
+    console.log('Saving profile to Supabase for user:', token.name);
+    console.log('Profile data:', body);
 
-    const userId = userResult.rows[0].id;
+    // Insert or update user with all profile details using Supabase
+    const { data, error } = await supabase
+      .from('users')
+      .upsert({
+        google_id: token.sub,
+        email: token.email,
+        name: token.name,
+        avatar_url: token.picture,
+        core_traits,
+        potential_career_interests,
+        dream_date_profile,
+        ideal_date,
+        ideal_partner,
+        unique_scoring_chart,
+        summary,
+        core_personality_traits,
+        interests
+      })
+      .select()
+      .single();
 
-    // Insert or update user profile
-    await db.query(
-      `INSERT INTO user_profiles (user_id, pref_vec, subs, likes, subs_count, likes_count, last_synced)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
-       ON CONFLICT (user_id) DO UPDATE SET
-         pref_vec = EXCLUDED.pref_vec,
-         subs = EXCLUDED.subs,
-         likes = EXCLUDED.likes,
-         subs_count = EXCLUDED.subs_count,
-         likes_count = EXCLUDED.likes_count,
-         last_synced = NOW()`,
-      [userId, pref_vec, subs, likes, subs.length, likes.length]
-    );
+    if (error) {
+      console.error('Supabase error:', error);
+      return NextResponse.json(
+        { error: "Database error", details: error.message },
+        { status: 500 }
+      );
+    }
 
-    return NextResponse.json({ success: true, userId });
+    console.log('✅ Profile saved successfully to Supabase:', data);
+    return NextResponse.json({ success: true, userId: data.id, user: data });
   } catch (error) {
     console.error("Error saving profile:", error);
     return NextResponse.json(
-      { error: "Failed to save profile" },
+      { error: "Failed to save profile", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
@@ -57,18 +72,18 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await db.query(
-      `SELECT u.*, p.* FROM app_users u 
-       LEFT JOIN user_profiles p ON u.id = p.user_id 
-       WHERE u.google_id = $1`,
-      [token.sub]
-    );
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('google_id', token.sub)
+      .single();
 
-    if (result.rows.length === 0) {
+    if (error) {
+      console.error('Supabase error:', error);
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(result.rows[0]);
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Error fetching profile:", error);
     return NextResponse.json(
