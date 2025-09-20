@@ -260,34 +260,6 @@ Be insightful, specific, and engaging. Use the actual channel/video names in you
 
     await fs.writeFile(userProfilePath, JSON.stringify(userProfile, null, 2));
 
-    // Generate taste vector from the analysis
-    const tasteText = `User interests: ${newDigitalFingerprint.subscriptions.map(s => s.title).join(', ')}. Liked videos: ${newDigitalFingerprint.likedVideos.map(v => v.title).join(', ')}. Analysis: ${analysis}`;
-    
-    try {
-      const embeddingModel = genAI.getGenerativeModel({ model: "text-embedding-004" });
-      const embeddingResult = await embeddingModel.embedContent(tasteText);
-      const tasteVector = embeddingResult.embedding.values;
-
-      // Save to database
-      const profileData = {
-        subs: newDigitalFingerprint.subscriptions.map(s => s.title || ''),
-        likes: newDigitalFingerprint.likedVideos.map(v => v.title || ''),
-        pref_vec: Array.from(tasteVector)
-      };
-
-      await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/profiles`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': req.headers.get('cookie') || ''
-        },
-        body: JSON.stringify(profileData)
-      });
-    } catch (dbError) {
-      console.error("Error saving to database:", dbError);
-      // Continue even if DB save fails
-    }
-
     return NextResponse.json({ analysis });
   } catch (error: unknown) {
     console.error("Error in youtube route:", error);
