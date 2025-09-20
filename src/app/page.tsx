@@ -51,7 +51,7 @@ export default function Home() {
           <div className="text-center">
             <h2 className="text-4xl font-bold text-center mb-4">Discover Your Digital Fingerprint</h2>
             <p className="text-lg text-gray-400 text-center mb-8">
-              Uncover your interests and personality traits based on your YouTube activity. Our AI analyzes your liked videos and subscriptions to create a unique profile of who you are.
+              Uncover your interests and personality traits based on your YouTube activity. Our AI analyzes your liked videos, subscriptions, watch later list, and playlists to create a unique profile of who you are.
             </p>
             <div className="flex justify-center gap-4">
               <button onClick={handleAnalysis} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-300 ease-in-out" disabled={isLoading}>

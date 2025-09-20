@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "google-auth-library": "^10.1.0",
     "googleapis": "^154.0.0",
     "next": "15.4.4",

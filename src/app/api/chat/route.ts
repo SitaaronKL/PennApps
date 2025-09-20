@@ -53,7 +53,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const digitalFingerprint = userProfile.fingerprint;
 
     // Construct the prompt for Gemini
-    const prompt = `You are an advanced AI assistant specializing in analyzing digital footprints. Your goal is to provide comprehensive, insightful, and highly detailed answers to user questions based *solely* on the provided digital fingerprint. This fingerprint contains extensive information about the user's YouTube subscriptions, liked videos, watch later list, playlists, sent emails, and inbox emails. 
+    const prompt = `You are an advanced AI assistant specializing in analyzing digital footprints. Your goal is to provide comprehensive, insightful, and highly detailed answers to user questions based *solely* on the provided digital fingerprint. This fingerprint contains extensive information about the user's YouTube subscriptions, liked videos, watch later list, and playlists. 
 
 Here is the user's complete digital fingerprint:
 
@@ -70,17 +70,17 @@ Based on this detailed digital fingerprint, provide a thorough and insightful an
 - **If the information is genuinely not available or cannot be reasonably inferred from the provided fingerprint, clearly state that you cannot answer the question based on the available data, but avoid being dismissive. Suggest what kind of information *would* be needed to answer such a question.**
 
 Your response should be well-structured and easy to read.`;
-    const apiKey = process.env.CEREBRAS_API_KEY as string | undefined;
+    const apiKey = process.env.OPENAI_API_KEY as string | undefined;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "Server misconfiguration: missing CEREBRAS_API_KEY" },
+        { error: "Server misconfiguration: missing OPENAI_API_KEY" },
         { status: 500 }
       );
     }
 
-    const model = process.env.CEREBRAS_MODEL || "llama-4-scout-17b-16e-instruct";
+    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-    const resp = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
@@ -91,21 +91,25 @@ Your response should be well-structured and easy to read.`;
         messages: [
           { role: "user", content: prompt },
         ],
+        max_tokens: 2000,
+        temperature: 0.7,
       }),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!resp.ok) {
       const details = await resp.text();
+      console.error("OpenAI API error:", details);
       return NextResponse.json(
-        { error: "Cerebras API error", details },
+        { error: "OpenAI API error", details },
         { status: 502 }
       );
     }
 
     const data = await resp.json() as {
-      choices?: Array<{ message?: { content?: string }, text?: string }>;
+      choices?: Array<{ message?: { content?: string } }>;
     };
-    const answer = data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? "";
+    const answer = data.choices?.[0]?.message?.content ?? "";
 
     return NextResponse.json({ answer });
 

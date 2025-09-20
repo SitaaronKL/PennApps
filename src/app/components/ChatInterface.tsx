@@ -55,9 +55,9 @@ const ChatInterface: React.FC = () => {
       <div className="h-96 overflow-y-auto border border-gray-700 p-4 mb-6 bg-gray-800 rounded-lg flex flex-col space-y-4 shadow-inner">
         {messages.length === 0 && (
           <p className="text-gray-400 text-center mt-auto mb-auto text-lg leading-relaxed">
-            Hello! I&apos;m your Digital Fingerprint AI. Ask me anything about your YouTube activity (subscriptions, liked videos, watch later, playlists) or your sent emails. For example, try asking: <br/>
+            Hello! I&apos;m your Digital Fingerprint AI. Ask me anything about your YouTube activity (subscriptions, liked videos, watch later, playlists). For example, try asking: <br/>
             <span className="font-semibold text-purple-300">&quot;What are my main interests based on my subscriptions?&quot;</span> or <br/>
-            <span className="font-semibold text-purple-300">&quot;Can you tell me about my communication style from my sent emails?&quot;</span>
+            <span className="font-semibold text-purple-300">&quot;What does my watch later list say about my learning goals?&quot;</span>
           </p>
         )}
         {messages.map((msg, index) => (
