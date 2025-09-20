@@ -289,129 +289,204 @@ export default function Home() {
           </section>
         </div>
       ) : (
-        <div className="min-h-screen bg-white">
-          {/* Header */}
-          <div className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-gray-900">Welcome, {session.user?.name}!</h1>
-              <button 
-                onClick={() => signOut()} 
-                className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-              >
-                Sign Out
-              </button>
+        <div className="min-h-screen bg-gray-50 flex">
+          {/* Sidebar */}
+          {hasProfile && (
+            <div className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+              {/* Logo/Brand */}
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-lg">💖</span>
+                  </div>
+                  <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">TasteMatch</span>
+                </div>
+              </div>
+
+              {/* User Info */}
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full overflow-hidden">
+                    {mounted && session.user?.image ? (
+                      <img src={session.user.image} alt={session.user.name || 'User'} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gray-300 flex items-center justify-center text-lg">👤</div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">{mounted ? session.user?.name : 'Loading...'}</p>
+                    <p className="text-sm text-gray-500">Premium Member</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <nav className="flex-1 p-4">
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setCurrentView('profile')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${
+                      currentView === 'profile' 
+                        ? 'bg-pink-50 text-pink-700 border-l-4 border-pink-500' 
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="text-lg">👤</span>
+                    <span className="font-medium">My Profile</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('swipe')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${
+                      currentView === 'swipe' 
+                        ? 'bg-pink-50 text-pink-700 border-l-4 border-pink-500' 
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="text-lg">🔍</span>
+                    <span className="font-medium">Discover</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('matches')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${
+                      currentView === 'matches' 
+                        ? 'bg-pink-50 text-pink-700 border-l-4 border-pink-500' 
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="text-lg">💕</span>
+                    <span className="font-medium">Matches</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('setup')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${
+                      currentView === 'setup' 
+                        ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500' 
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="text-lg">🔄</span>
+                    <span className="font-medium">Refresh Profile</span>
+                  </button>
+                </div>
+              </nav>
+
+              {/* Sign Out */}
+              <div className="p-4 border-t border-gray-200">
+                <button 
+                  onClick={() => signOut()} 
+                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
+                >
+                  <span className="text-lg">🚪</span>
+                  <span className="font-medium">Sign Out</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col">
+            {/* Header */}
+            <div className="bg-white shadow-sm border-b border-gray-200 p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    {mounted && currentView === 'profile' && 'My Profile'}
+                    {mounted && currentView === 'swipe' && 'Discover'}
+                    {mounted && currentView === 'matches' && 'Matches'}
+                    {mounted && currentView === 'setup' && 'Profile Setup'}
+                    {!mounted && 'Loading...'}
+                  </h1>
+                  <p className="text-gray-600 mt-1">
+                    {mounted && currentView === 'profile' && 'Your dating profile overview'}
+                    {mounted && currentView === 'swipe' && 'Find your perfect match'}
+                    {mounted && currentView === 'matches' && 'People who liked you back'}
+                    {mounted && currentView === 'setup' && 'Create or refresh your profile'}
+                    {!mounted && 'Please wait...'}
+                  </p>
+                </div>
+                {!hasProfile && mounted && (
+                  <button 
+                    onClick={() => signOut()} 
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-auto">
+              {/* Setup View */}
+              {currentView === 'setup' && (
+                <div className="p-8">
+                  <div className="max-w-2xl mx-auto text-center">
+                    <div className="bg-white rounded-2xl shadow-lg p-8">
+                      <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full mx-auto mb-6 flex items-center justify-center">
+                        <span className="text-white text-2xl">🎯</span>
+                      </div>
+                      <h2 className="text-3xl font-bold mb-4 text-gray-900">Create Your Dating Profile</h2>
+                      <p className="text-lg text-gray-600 mb-8">
+                        We'll analyze your YouTube data to understand your personality and interests.
+                      </p>
+                      
+                      <button 
+                        onClick={createProfile} 
+                        disabled={isLoading}
+                        className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
+                      >
+                        {isLoading ? 'Creating Profile...' : 'Create My Dating Profile'}
+                      </button>
+
+                      {isLoading && (
+                        <div className="mt-8">
+                          <div className="flex justify-center mb-4">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
+                          </div>
+                          <p className="text-gray-600">Analyzing your YouTube data and saving to database...</p>
+                        </div>
+                      )}
+
+                      {error && (
+                        <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-red-700">Error: {error}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Profile View */}
+              {currentView === 'profile' && profileData && (
+                <div className="p-8">
+                  <ProfileCards 
+                    profileData={profileData}
+                    userInfo={{
+                      name: session.user?.name || 'User',
+                      avatar_url: session.user?.image || undefined
+                    }}
+                    onContinue={() => setCurrentView('swipe')}
+                    onSignOut={() => signOut()}
+                  />
+                </div>
+              )}
+
+              {/* Discover View */}
+              {currentView === 'swipe' && (
+                <div className="p-8">
+                  <DiscoverInterface />
+                </div>
+              )}
+
+              {/* Matches View */}
+              {currentView === 'matches' && (
+                <div className="p-8">
+                  <MatchesList />
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Tab Navigation */}
-          {hasProfile && (
-            <div className="flex justify-center py-8 bg-white">
-              <div className="bg-gray-100 rounded-xl p-2 flex gap-2 shadow-sm">
-                <button
-                  onClick={() => setCurrentView('profile')}
-                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                    currentView === 'profile' 
-                      ? 'bg-pink-500 text-white shadow-lg' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                  }`}
-                >
-                  My Profile
-                </button>
-                <button
-                  onClick={() => setCurrentView('swipe')}
-                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                    currentView === 'swipe' 
-                      ? 'bg-pink-500 text-white shadow-lg' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                  }`}
-                >
-                  Discover
-                </button>
-                <button
-                  onClick={() => setCurrentView('matches')}
-                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                    currentView === 'matches' 
-                      ? 'bg-pink-500 text-white shadow-lg' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                  }`}
-                >
-                  Matches
-                </button>
-                <button
-                  onClick={() => setCurrentView('setup')}
-                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                    currentView === 'setup' 
-                      ? 'bg-blue-500 text-white shadow-lg' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                  }`}
-                >
-                  Refresh Profile
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Setup View */}
-          {currentView === 'setup' && (
-            <div className="bg-white px-8 py-12">
-              <div className="max-w-2xl mx-auto text-center">
-                <h2 className="text-4xl font-bold mb-6 text-gray-900">Create Your Dating Profile</h2>
-                <p className="text-lg text-gray-600 mb-8">
-                  We'll analyze your YouTube data to understand your personality and interests.
-                </p>
-                
-                <button 
-                  onClick={createProfile} 
-                  disabled={isLoading}
-                  className="bg-pink-500 hover:bg-pink-600 disabled:bg-gray-400 text-white font-bold py-4 px-8 rounded-xl transition-colors duration-300"
-                >
-                  {isLoading ? 'Creating Profile...' : 'Create My Dating Profile'}
-                </button>
-
-                {isLoading && (
-                  <div className="mt-8">
-                    <p className="text-gray-600">Analyzing your YouTube data and saving to database...</p>
-                  </div>
-                )}
-
-                {error && (
-                  <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-700">Error: {error}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Profile View - Beautiful Cards */}
-          {currentView === 'profile' && profileData && (
-            <div className="bg-white px-8 py-12">
-              <ProfileCards 
-                profileData={profileData}
-                userInfo={{
-                  name: session.user?.name || 'User',
-                  avatar_url: session.user?.image || undefined
-                }}
-                onContinue={() => setCurrentView('swipe')}
-              />
-            </div>
-          )}
-
-          {/* Discover View */}
-          {currentView === 'swipe' && (
-            <div className="bg-white px-8 py-12">
-              <h2 className="text-3xl font-bold text-center mb-8 text-gray-900">Discover Compatible Matches</h2>
-              <DiscoverInterface />
-            </div>
-          )}
-
-          {/* Matches View */}
-          {currentView === 'matches' && (
-            <div className="bg-white px-8 py-12">
-              <h2 className="text-3xl font-bold text-center mb-8 text-gray-900">Your Matches</h2>
-              <MatchesList />
-            </div>
-          )}
         </div>
       )}
     </main>

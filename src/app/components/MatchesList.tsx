@@ -115,7 +115,11 @@ export default function MatchesList() {
                   <span className="text-pink-500">🎉</span>
                 </h3>
                 <p className="text-gray-600 text-sm">
-                  Matched on {new Date(match.created_at).toLocaleDateString()}
+                  Matched on {new Date(match.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
                 </p>
                 <p className="text-pink-600 text-sm mt-1">
                   ✨ You both liked each other!
@@ -138,23 +142,39 @@ export default function MatchesList() {
 
             {/* Conversation Starters */}
             {selectedMatch === match.id && (
-              <div className="border-t border-gray-200 p-6 bg-gray-50">
-                <h4 className="text-gray-900 font-semibold mb-4 flex items-center gap-2">
+              <div style={{borderTop: '1px solid #f0f0f0', padding: '24px', backgroundColor: '#fafafa'}}>
+                <h4 style={{color: '#333', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px'}}>
                   <span>💭</span>
                   Conversation Starters
                 </h4>
-                <div className="grid gap-3 md:grid-cols-2">
+                <div style={{display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))'}}>
                   {conversationStarters.map((starter) => (
                     <button
                       key={starter.id}
                       onClick={() => handleSendMessage(match.id, starter.text)}
-                      className="text-left p-4 bg-white hover:bg-gray-50 rounded-lg border border-gray-200 hover:border-pink-500 transition-all duration-300 group shadow-sm hover:shadow-md"
+                      style={{
+                        textAlign: 'left',
+                        padding: '16px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '8px',
+                        border: '1px solid #e0e0e0',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#fef7f7';
+                        e.currentTarget.style.borderColor = '#f8c8c8';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#ffffff';
+                        e.currentTarget.style.borderColor = '#e0e0e0';
+                      }}
                     >
-                      <div className="flex items-start gap-3">
-                        <span className="text-xl group-hover:scale-110 transition-transform">
+                      <div style={{display: 'flex', alignItems: 'flex-start', gap: '12px'}}>
+                        <span style={{fontSize: '20px'}}>
                           {starter.emoji}
                         </span>
-                        <p className="text-gray-700 group-hover:text-gray-900 text-sm leading-relaxed">
+                        <p style={{color: '#666', fontSize: '14px', lineHeight: '1.5', margin: 0}}>
                           {starter.text}
                         </p>
                       </div>
@@ -162,8 +182,8 @@ export default function MatchesList() {
                   ))}
                 </div>
                 
-                <div className="mt-4 p-4 bg-pink-50 rounded-lg border border-pink-200">
-                  <p className="text-pink-700 text-sm text-center">
+                <div style={{marginTop: '16px', padding: '16px', backgroundColor: '#fef7f7', borderRadius: '8px', border: '1px solid #f8c8c8'}}>
+                  <p style={{color: '#d63384', fontSize: '14px', textAlign: 'center', margin: 0}}>
                     💡 Choose a conversation starter above, or write your own message!
                   </p>
                 </div>
@@ -173,17 +193,17 @@ export default function MatchesList() {
         ))}
       </div>
       
-      <div className="text-center mt-8 p-6 bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="text-6xl mb-4">
+      <div style={{textAlign: 'center', marginTop: '32px', padding: '24px', backgroundColor: '#fafafa', borderRadius: '12px', border: '1px solid #f0f0f0'}}>
+        <div style={{fontSize: '48px', marginBottom: '16px'}}>
           {matches.length > 0 ? '🎉' : '💝'}
         </div>
-        <p className="text-gray-900 text-lg font-semibold mb-2">
+        <p style={{color: '#333', fontSize: '18px', fontWeight: '600', marginBottom: '8px'}}>
           {matches.length > 0 
             ? `${matches.length} ${matches.length === 1 ? 'Match' : 'Matches'} Found!`
             : 'No Matches Yet'
           }
         </p>
-        <p className="text-gray-600">
+        <p style={{color: '#666', fontSize: '16px', margin: 0}}>
           {matches.length > 0 
             ? 'Start meaningful conversations with your compatible matches above!'
             : 'Keep exploring the Discover section to find your perfect matches.'
