@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { supabase } from "@/lib/db";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -78,6 +79,70 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Helper function for Gemini → OpenAI fallback (same as youtube route)
+async function getCompatibilityAI(prompt: string): Promise<string> {
+  // Try Gemini first
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  if (geminiApiKey) {
+    try {
+      console.log("🔮 Trying Gemini for compatibility analysis...");
+      const genAI = new GoogleGenerativeAI(geminiApiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const result = await model.generateContent(prompt + "\n\nIMPORTANT: Return ONLY valid JSON, no other text.");
+      const response = await result.response;
+      const text = response.text();
+      
+      if (text && text.length > 20) {
+        console.log("✅ Gemini compatibility analysis succeeded");
+        return text;
+      }
+    } catch (error) {
+      console.log("❌ Gemini compatibility analysis failed:", error);
+    }
+  }
+
+  // Fallback to OpenAI
+  console.log("🤖 Falling back to OpenAI for compatibility...");
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+  if (!openaiApiKey) {
+    throw new Error("Both Gemini and OpenAI API keys are missing");
+  }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${openaiApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are a dating compatibility expert. You MUST respond with ONLY valid JSON, no other text." },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 500,
+      temperature: 0.3,
+      response_format: { type: "json_object" }
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const analysis = data.choices?.[0]?.message?.content ?? "";
+  
+  if (analysis && analysis.length > 0) {
+    console.log("✅ OpenAI compatibility analysis succeeded");
+    return analysis;
+  }
+  
+  throw new Error("Both Gemini and OpenAI failed to generate compatibility analysis");
+}
+
 async function calculateCompatibilityScore(currentUser: any, targetUser: any) {
   try {
     const prompt = `You are a dating compatibility expert. Analyze these two users and provide a compatibility assessment.
@@ -105,36 +170,7 @@ Return ONLY valid JSON with this structure:
 
 Score should be 0-100. Reasons should be specific compatibility factors.`;
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error("OpenAI API key not configured");
-    }
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You are a dating compatibility expert. You MUST respond with ONLY valid JSON, no other text." },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 500,
-        temperature: 0.3,
-        response_format: { type: "json_object" }
-      }),
-      signal: AbortSignal.timeout(30000),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const rawAnalysis = data.choices?.[0]?.message?.content ?? "";
+    const rawAnalysis = await getCompatibilityAI(prompt);
     
     try {
       const parsed = JSON.parse(rawAnalysis);

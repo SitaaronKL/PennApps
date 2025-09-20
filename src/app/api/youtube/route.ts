@@ -1,9 +1,73 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 import { google, youtube_v3 } from "googleapis";
-// Replaced Gemini with Cerebras chat completions via REST API
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs/promises";
 import path from "path";
+
+// Helper function to try Gemini first, then fallback to OpenAI
+async function getAIAnalysis(prompt: string): Promise<string> {
+  // Try Gemini first
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  if (geminiApiKey) {
+    try {
+      console.log("🔮 Trying Gemini API...");
+      const genAI = new GoogleGenerativeAI(geminiApiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      if (text && text.length > 100) {
+        console.log("✅ Gemini API succeeded");
+        return text;
+      }
+    } catch (error) {
+      console.log("❌ Gemini API failed:", error);
+    }
+  }
+
+  // Fallback to OpenAI
+  console.log("🤖 Falling back to OpenAI API...");
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+  if (!openaiApiKey) {
+    throw new Error("Both Gemini and OpenAI API keys are missing");
+  }
+
+  const modelName = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${openaiApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: modelName,
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 3000,
+      temperature: 0.7,
+    }),
+    signal: AbortSignal.timeout(60000),
+  });
+
+  if (!resp.ok) {
+    const details = await resp.text();
+    throw new Error(`OpenAI API error: ${resp.status} - ${details}`);
+  }
+
+  const data = await resp.json() as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const analysis = data.choices?.[0]?.message?.content ?? "";
+  
+  if (analysis && analysis.length > 0) {
+    console.log("✅ OpenAI API succeeded");
+    return analysis;
+  }
+  
+  throw new Error("Both Gemini and OpenAI failed to generate analysis");
+}
 
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -175,8 +239,8 @@ export async function GET(req: NextRequest) {
     //   // No existing profile, so we'll generate a new one
     // }
 
-    // --- Generate profile via Cerebras ---
-    console.log("Starting Cerebras analysis...");
+    // --- Generate profile via AI (Gemini → OpenAI fallback) ---
+    console.log("Starting AI analysis with Gemini → OpenAI fallback...");
     
     // Create a simplified data summary to reduce payload size
     const subscriptions = newDigitalFingerprint.subscriptions.slice(0, 50).map(sub => sub.title);
@@ -211,6 +275,11 @@ Create a detailed profile including:
 6. A unique scoring chart showing key characteristics
 
 Be insightful, specific, and engaging. Use the actual channel/video names in your analysis.`;
+
+    // Use Gemini → OpenAI fallback system
+    const analysis = await getAIAnalysis(prompt);
+
+    /* COMMENTED OUT - Old OpenAI-only implementation (kept as backup)
     const apiKey = process.env.OPENAI_API_KEY as string | undefined;
     if (!apiKey) {
       return NextResponse.json(
@@ -251,6 +320,8 @@ Be insightful, specific, and engaging. Use the actual channel/video names in you
       choices?: Array<{ message?: { content?: string } }>;
     };
     const analysis = data.choices?.[0]?.message?.content ?? "";
+    */
+    
     console.log("AI analysis received:", analysis.length > 0 ? `Success (${analysis.length} chars)` : "Empty");
     console.log("=== FULL OPENAI RESPONSE ===");
     console.log(analysis);
