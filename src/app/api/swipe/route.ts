@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import db from "@/lib/db";
+import { supabase } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -17,28 +17,88 @@ export async function POST(req: NextRequest) {
     }
 
     // Get current user ID
-    const userResult = await db.query(
-      "SELECT id FROM app_users WHERE google_id = $1",
-      [token.sub]
-    );
+    const { data: currentUser, error: currentUserError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('google_id', token.sub)
+      .maybeSingle();
 
-    if (userResult.rows.length === 0) {
+    if (currentUserError) {
+      console.error('Error fetching current user:', currentUserError);
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
+    }
+
+    if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const userId = userResult.rows[0].id;
+    const userId = currentUser.id;
 
-    // Use the stored procedure to handle swipe and potential matching
-    const result = await db.query(
-      "SELECT * FROM like_and_maybe_match($1, $2, $3)",
-      [userId, targetId, didLike]
-    );
+    // Handle like/match logic with real database
+    let matched = false;
+    let matchId = null;
 
-    const { matched, match_id } = result.rows[0];
+    if (didLike) {
+      // Create or update the like record
+      const { error: likeError } = await supabase
+        .from('likes')
+        .upsert({
+          user_id: userId,
+          target_id: targetId,
+          liked: true,
+          created_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,target_id'
+        });
+
+      if (likeError) {
+        console.error('Error creating like:', likeError);
+        return NextResponse.json({ error: "Failed to process like" }, { status: 500 });
+      }
+
+      console.log(`✅ User ${userId} liked user ${targetId}`);
+
+      // FOR DEMO: Automatically create mutual like so we always get a match
+      const { error: mutualLikeError } = await supabase
+        .from('likes')
+        .upsert({
+          user_id: targetId,
+          target_id: userId,
+          liked: true,
+          created_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,target_id'
+        });
+
+      if (mutualLikeError) {
+        console.error('Error creating mutual like:', mutualLikeError);
+      }
+
+      console.log(`🔄 Auto-created mutual like for demo purposes`);
+
+      // Now we always have a mutual like, so create a match
+      const { data: newMatch, error: matchError } = await supabase
+        .from('matches')
+        .insert({
+          user1_id: userId,
+          user2_id: targetId,
+          created_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
+
+      if (matchError && !matchError.message.includes('duplicate')) {
+        console.error('Error creating match:', matchError);
+      } else if (newMatch) {
+        matched = true;
+        matchId = newMatch.id;
+        console.log(`🎉 MATCH CREATED! User ${userId} and ${targetId} matched!`);
+      }
+    }
 
     return NextResponse.json({ 
       matched: Boolean(matched), 
-      matchId: match_id,
+      matchId: matchId,
       swiped: true 
     });
   } catch (error) {

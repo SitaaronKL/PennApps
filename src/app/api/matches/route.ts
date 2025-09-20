@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import db from "@/lib/db";
+import { supabase } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -10,47 +10,60 @@ export async function GET(req: NextRequest) {
 
   try {
     // Get current user ID
-    const userResult = await db.query(
-      "SELECT id FROM app_users WHERE google_id = $1",
-      [token.sub]
-    );
+    const { data: currentUser, error: currentUserError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('google_id', token.sub)
+      .maybeSingle();
 
-    if (userResult.rows.length === 0) {
+    if (currentUserError) {
+      console.error('Error fetching current user:', currentUserError);
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
+    }
+
+    if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const userId = userResult.rows[0].id;
+    const userId = currentUser.id;
 
-    // Get all matches for the user
-    const matchesResult = await db.query(
-      `SELECT m.id, m.created_at,
-              CASE 
-                WHEN m.user_a = $1 THEN u2.id
-                ELSE u1.id
-              END as match_user_id,
-              CASE 
-                WHEN m.user_a = $1 THEN u2.name
-                ELSE u1.name
-              END as match_name,
-              CASE 
-                WHEN m.user_a = $1 THEN u2.avatar_url
-                ELSE u1.avatar_url
-              END as match_avatar_url
-       FROM matches m
-       JOIN app_users u1 ON m.user_a = u1.id
-       JOIN app_users u2 ON m.user_b = u2.id
-       WHERE m.user_a = $1 OR m.user_b = $1
-       ORDER BY m.created_at DESC`,
-      [userId]
-    );
+    // Get all matches for the user using the real matches table
+    const { data: matchesData, error: matchesError } = await supabase
+      .from('matches')
+      .select('id, created_at, user1_id, user2_id')
+      .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+      .order('created_at', { ascending: false });
 
-    const matches = matchesResult.rows.map(row => ({
-      id: row.id,
-      userId: row.match_user_id,
-      name: row.match_name,
-      avatar_url: row.match_avatar_url,
-      created_at: row.created_at
-    }));
+    if (matchesError) {
+      console.error('Error fetching matches:', matchesError);
+      return NextResponse.json({ error: "Failed to fetch matches" }, { status: 500 });
+    }
+
+    // Get user details for each match
+    const matches = await Promise.all(
+      (matchesData || []).map(async (match) => {
+        const otherUserId = match.user1_id === userId ? match.user2_id : match.user1_id;
+        
+        const { data: otherUser, error: userError } = await supabase
+          .from('users')
+          .select('id, name, avatar_url')
+          .eq('id', otherUserId)
+          .single();
+
+        if (userError || !otherUser) {
+          console.error('Error fetching user:', userError);
+          return null;
+        }
+
+        return {
+          id: match.id,
+          userId: otherUser.id,
+          name: otherUser.name,
+          avatar_url: otherUser.avatar_url,
+          created_at: match.created_at
+        };
+      })
+    ).then(results => results.filter(Boolean));
 
     return NextResponse.json({ matches });
   } catch (error) {

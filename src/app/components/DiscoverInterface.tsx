@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import MatchPopup from './MatchPopup';
 
 interface DiscoverUser {
   id: string;
@@ -21,6 +22,8 @@ export default function DiscoverInterface() {
   const [users, setUsers] = useState<DiscoverUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showMatchPopup, setShowMatchPopup] = useState(false);
+  const [matchedUser, setMatchedUser] = useState<{ name: string; avatar_url?: string } | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -62,14 +65,34 @@ export default function DiscoverInterface() {
       const result = await response.json();
       
       if (result.matched) {
-        alert(`🎉 It's a match with ${users.find(u => u.id === userId)?.name}!`);
+        const user = users.find(u => u.id === userId);
+        if (user) {
+          setMatchedUser({
+            name: user.name,
+            avatar_url: user.avatar_url
+          });
+          setShowMatchPopup(true);
+        }
       } else {
-        alert('Like sent! 💖');
+        // Show a subtle success message
+        const user = users.find(u => u.id === userId);
+        console.log(`Like sent to ${user?.name}! 💖`);
       }
     } catch (error) {
       console.error('Error sending like:', error);
       alert('Failed to send like. Please try again.');
     }
+  };
+
+  const handleStartConversation = () => {
+    // For now, just navigate to matches tab
+    console.log('Starting conversation with', matchedUser?.name);
+    // You can add navigation logic here later
+  };
+
+  const handleCloseMatchPopup = () => {
+    setShowMatchPopup(false);
+    setMatchedUser(null);
   };
 
   const getScoreColor = (score: number) => {
@@ -246,6 +269,16 @@ export default function DiscoverInterface() {
           Refresh Matches
         </button>
       </div>
+
+      {/* Match Popup */}
+      {matchedUser && (
+        <MatchPopup
+          isOpen={showMatchPopup}
+          matchedUser={matchedUser}
+          onClose={handleCloseMatchPopup}
+          onStartConversation={handleStartConversation}
+        />
+      )}
     </div>
   );
 }
