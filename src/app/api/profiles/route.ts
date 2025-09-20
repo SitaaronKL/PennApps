@@ -10,6 +10,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    
+    // First, delete any existing profile for this user to enable refresh
+    console.log('Deleting existing profile for user:', token.name);
+    await supabase
+      .from('users')
+      .delete()
+      .eq('google_id', token.sub);
     const { 
       core_traits, 
       potential_career_interests, 
@@ -25,10 +32,10 @@ export async function POST(req: NextRequest) {
     console.log('Saving profile to Supabase for user:', token.name);
     console.log('Profile data:', body);
 
-    // Insert or update user with all profile details using Supabase
+    // Insert fresh user profile (after deleting existing one)
     const { data, error } = await supabase
       .from('users')
-      .upsert({
+      .insert({
         google_id: token.sub,
         email: token.email,
         name: token.name,
@@ -42,8 +49,6 @@ export async function POST(req: NextRequest) {
         summary,
         core_personality_traits,
         interests
-      }, {
-        onConflict: 'google_id'
       })
       .select()
       .single();
