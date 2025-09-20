@@ -110,7 +110,7 @@ export default function DiscoverInterface() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-white text-xl">Loading potential matches...</div>
+        <div className="text-gray-900 text-xl">Loading potential matches...</div>
       </div>
     );
   }
@@ -119,13 +119,13 @@ export default function DiscoverInterface() {
     const isProfileError = error.includes('create your profile');
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-center text-white max-w-md">
-          <div className="text-xl mb-4 text-red-400">
+        <div className="text-center text-gray-900 max-w-md">
+          <div className="text-xl mb-4 text-red-600">
             {isProfileError ? '📝 Profile Required' : 'Error'}
           </div>
-          <p className="text-gray-300 mb-6">{error}</p>
+          <p className="text-gray-700 mb-6">{error}</p>
           {isProfileError ? (
-            <p className="text-sm text-gray-400 mb-4">
+            <p className="text-sm text-gray-600 mb-4">
               Go to the "Refresh Profile" tab to create your dating profile first!
             </p>
           ) : (
@@ -144,7 +144,7 @@ export default function DiscoverInterface() {
   if (users.length === 0) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-center text-white">
+        <div className="text-center text-gray-900">
           <div className="text-xl mb-4">No users available to discover!</div>
           <button
             onClick={fetchUsers}
@@ -163,7 +163,7 @@ export default function DiscoverInterface() {
         {users.map((user) => (
           <div
             key={user.id}
-            className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-pink-500 transition-all duration-300"
+            className="bg-white rounded-xl p-6 border border-gray-200 hover:border-pink-500 transition-all duration-300 shadow-sm hover:shadow-md"
           >
             {/* User Avatar & Name */}
             <div className="flex items-center mb-4">
@@ -174,24 +174,24 @@ export default function DiscoverInterface() {
                   className="w-12 h-12 rounded-full mr-3"
                 />
               ) : (
-                <div className="w-12 h-12 bg-gray-600 rounded-full mr-3 flex items-center justify-center">
-                  <span className="text-lg font-bold text-white">
+                <div className="w-12 h-12 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
+                  <span className="text-lg font-bold text-gray-700">
                     {user.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}
-              <h3 className="text-xl font-bold text-white">{user.name}</h3>
+              <h3 className="text-xl font-bold text-gray-900">{user.name}</h3>
             </div>
 
             {/* Compatibility Score */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-300 font-medium">Compatibility</span>
+                <span className="text-gray-700 font-medium">Compatibility</span>
                 <span className={`text-xl font-bold ${getScoreColor(user.compatibility_score)}`}>
                   {user.compatibility_score}%
                 </span>
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-2">
+              <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className={`h-2 rounded-full ${getScoreBarColor(user.compatibility_score)}`}
                   style={{ width: `${user.compatibility_score}%` }}
@@ -202,19 +202,19 @@ export default function DiscoverInterface() {
             {/* Detailed Scores */}
             <div className="mb-4 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Personality</span>
+                <span className="text-gray-600">Personality</span>
                 <span className={getScoreColor(user.personality_match)}>
                   {user.personality_match}%
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Interests</span>
+                <span className="text-gray-600">Interests</span>
                 <span className={getScoreColor(user.interests_match)}>
                   {user.interests_match}%
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Dating Goals</span>
+                <span className="text-gray-600">Dating Goals</span>
                 <span className={getScoreColor(user.dating_goals_match)}>
                   {user.dating_goals_match}%
                 </span>
@@ -223,17 +223,17 @@ export default function DiscoverInterface() {
 
             {/* Core Traits */}
             <div className="mb-4">
-              <h4 className="text-sm font-semibold text-gray-300 mb-2">Core Traits</h4>
-              <p className="text-sm text-gray-400 overflow-hidden" style={{display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical'}}>{user.core_traits}</p>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">Core Traits</h4>
+              <p className="text-sm text-gray-600 overflow-hidden" style={{display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical'}}>{user.core_traits}</p>
             </div>
 
             {/* Compatibility Reasons */}
             <div className="mb-4">
-              <h4 className="text-sm font-semibold text-gray-300 mb-2">Why You Match</h4>
-              <ul className="text-sm text-gray-400 space-y-1">
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">Why You Match</h4>
+              <ul className="text-sm text-gray-600 space-y-1">
                 {user.compatibility_reasons.slice(0, 3).map((reason, index) => (
                   <li key={index} className="flex items-start">
-                    <span className="text-pink-400 mr-2">•</span>
+                    <span className="text-pink-500 mr-2">•</span>
                     {reason}
                   </li>
                 ))}
@@ -242,8 +242,8 @@ export default function DiscoverInterface() {
 
             {/* Dating Persona */}
             <div className="mb-6">
-              <h4 className="text-sm font-semibold text-gray-300 mb-2">Dating Persona</h4>
-              <p className="text-sm text-gray-400 overflow-hidden" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>{user.dream_date_profile}</p>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">Dating Persona</h4>
+              <p className="text-sm text-gray-600 overflow-hidden" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>{user.dream_date_profile}</p>
             </div>
 
             {/* Action Button */}
@@ -258,7 +258,7 @@ export default function DiscoverInterface() {
       </div>
 
       {/* Stats */}
-      <div className="mt-8 text-center text-white">
+      <div className="mt-8 text-center text-gray-900">
         <div className="text-lg">
           {users.length} potential matches found
         </div>

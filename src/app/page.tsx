@@ -166,11 +166,11 @@ export default function Home() {
   };
 
   if (!mounted) {
-    return <div className="min-h-screen bg-gray-900"></div>;
+    return <div className="min-h-screen bg-white"></div>;
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-white">
       {!session ? (
         <div className="min-h-screen bg-gray-50">
           {/* Header */}
@@ -289,28 +289,30 @@ export default function Home() {
           </section>
         </div>
       ) : (
-        <div className="p-8">
+        <div className="min-h-screen bg-white">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold">Welcome, {session.user?.name}!</h1>
-            <button 
-              onClick={() => signOut()} 
-              className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg"
-            >
-              Sign Out
-            </button>
+          <div className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-gray-900">Welcome, {session.user?.name}!</h1>
+              <button 
+                onClick={() => signOut()} 
+                className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
 
           {/* Tab Navigation */}
           {hasProfile && (
-            <div className="flex justify-center mb-8">
-              <div className="bg-gray-800 rounded-xl p-2 flex gap-2">
+            <div className="flex justify-center py-8 bg-white">
+              <div className="bg-gray-100 rounded-xl p-2 flex gap-2 shadow-sm">
                 <button
                   onClick={() => setCurrentView('profile')}
                   className={`px-6 py-3 rounded-lg font-medium transition-all ${
                     currentView === 'profile' 
                       ? 'bg-pink-500 text-white shadow-lg' 
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
                   }`}
                 >
                   My Profile
@@ -320,7 +322,7 @@ export default function Home() {
                   className={`px-6 py-3 rounded-lg font-medium transition-all ${
                     currentView === 'swipe' 
                       ? 'bg-pink-500 text-white shadow-lg' 
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
                   }`}
                 >
                   Discover
@@ -330,7 +332,7 @@ export default function Home() {
                   className={`px-6 py-3 rounded-lg font-medium transition-all ${
                     currentView === 'matches' 
                       ? 'bg-pink-500 text-white shadow-lg' 
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
                   }`}
                 >
                   Matches
@@ -340,7 +342,7 @@ export default function Home() {
                   className={`px-6 py-3 rounded-lg font-medium transition-all ${
                     currentView === 'setup' 
                       ? 'bg-blue-500 text-white shadow-lg' 
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
                   }`}
                 >
                   Refresh Profile
@@ -351,58 +353,62 @@ export default function Home() {
 
           {/* Setup View */}
           {currentView === 'setup' && (
-            <div className="max-w-2xl mx-auto text-center">
-              <h2 className="text-4xl font-bold mb-6">Create Your Dating Profile</h2>
-              <p className="text-lg text-gray-400 mb-8">
-                We'll analyze your YouTube data to understand your personality and interests.
-              </p>
-              
-              <button 
-                onClick={createProfile} 
-                disabled={isLoading}
-                className="bg-pink-500 hover:bg-pink-600 disabled:bg-gray-500 text-white font-bold py-4 px-8 rounded-xl transition-colors duration-300"
-              >
-                {isLoading ? 'Creating Profile...' : 'Create My Dating Profile'}
-              </button>
+            <div className="bg-white px-8 py-12">
+              <div className="max-w-2xl mx-auto text-center">
+                <h2 className="text-4xl font-bold mb-6 text-gray-900">Create Your Dating Profile</h2>
+                <p className="text-lg text-gray-600 mb-8">
+                  We'll analyze your YouTube data to understand your personality and interests.
+                </p>
+                
+                <button 
+                  onClick={createProfile} 
+                  disabled={isLoading}
+                  className="bg-pink-500 hover:bg-pink-600 disabled:bg-gray-400 text-white font-bold py-4 px-8 rounded-xl transition-colors duration-300"
+                >
+                  {isLoading ? 'Creating Profile...' : 'Create My Dating Profile'}
+                </button>
 
-              {isLoading && (
-                <div className="mt-8">
-                  <p className="text-gray-400">Analyzing your YouTube data and saving to database...</p>
-                </div>
-              )}
+                {isLoading && (
+                  <div className="mt-8">
+                    <p className="text-gray-600">Analyzing your YouTube data and saving to database...</p>
+                  </div>
+                )}
 
-              {error && (
-                <div className="mt-8 p-4 bg-red-900 rounded-lg">
-                  <p className="text-red-300">Error: {error}</p>
-                </div>
-              )}
+                {error && (
+                  <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-700">Error: {error}</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {/* Profile View - Beautiful Cards */}
           {currentView === 'profile' && profileData && (
-            <ProfileCards 
-              profileData={profileData}
-              userInfo={{
-                name: session.user?.name || 'User',
-                avatar_url: session.user?.image || undefined
-              }}
-              onContinue={() => setCurrentView('swipe')}
-            />
+            <div className="bg-white px-8 py-12">
+              <ProfileCards 
+                profileData={profileData}
+                userInfo={{
+                  name: session.user?.name || 'User',
+                  avatar_url: session.user?.image || undefined
+                }}
+                onContinue={() => setCurrentView('swipe')}
+              />
+            </div>
           )}
 
           {/* Discover View */}
           {currentView === 'swipe' && (
-            <div>
-              <h2 className="text-3xl font-bold text-center mb-8">Discover Compatible Matches</h2>
+            <div className="bg-white px-8 py-12">
+              <h2 className="text-3xl font-bold text-center mb-8 text-gray-900">Discover Compatible Matches</h2>
               <DiscoverInterface />
             </div>
           )}
 
           {/* Matches View */}
           {currentView === 'matches' && (
-            <div>
-              <h2 className="text-3xl font-bold text-center mb-8">Your Matches</h2>
+            <div className="bg-white px-8 py-12">
+              <h2 className="text-3xl font-bold text-center mb-8 text-gray-900">Your Matches</h2>
               <MatchesList />
             </div>
           )}
