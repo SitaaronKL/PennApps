@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import DiscoverInterface from '@/app/components/DiscoverInterface';
-import ProfileCards from '@/app/components/ProfileCards';
-import MatchesList from '@/app/components/MatchesList';
+import dynamic from 'next/dynamic';
+// Dynamic imports to avoid SSR issues
+const DiscoverInterface = dynamic(() => import('@/app/components/DiscoverInterface'), { ssr: false });
+const ProfileCards = dynamic(() => import('@/app/components/ProfileCards'), { ssr: false });
+const MatchesList = dynamic(() => import('@/app/components/MatchesList'), { ssr: false });
 
 export default function Home() {
   const { data: session } = useSession();
@@ -13,18 +15,12 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'setup' | 'profile' | 'swipe' | 'matches'>('setup');
   const [hasProfile, setHasProfile] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Check for existing profile when user signs in
   useEffect(() => {
-    if (session?.user && mounted) {
+    if (session?.user) {
       checkExistingProfile();
     }
-  }, [session, mounted]);
+  }, [session]);
 
   const checkExistingProfile = async () => {
     try {
@@ -165,128 +161,46 @@ export default function Home() {
     setIsLoading(false);
   };
 
-  if (!mounted) {
-    return <div className="min-h-screen bg-white"></div>;
-  }
 
   return (
     <main className="min-h-screen bg-white">
       {!session ? (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-white flex flex-col">
           {/* Header */}
-          <header className="flex items-center justify-between px-8 py-4 bg-white shadow-sm">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-xl">💖</span>
-              </div>
-            </div>
-            
-            {/* Navigation */}
-            <nav className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 font-medium">Features</a>
-              <a href="#about" className="text-gray-600 hover:text-gray-900 font-medium">About</a>
-              <a href="#safety" className="text-gray-600 hover:text-gray-900 font-medium">Safety</a>
-              <a href="#contact" className="text-gray-600 hover:text-gray-900 font-medium">Contact</a>
-            </nav>
-            
-            {/* Auth Buttons */}
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => signIn('google')}
-                className="text-gray-600 hover:text-gray-900 font-medium"
-              >
-                Log In
-              </button>
-              <button 
-                onClick={() => signIn('google')}
-                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-full transition-all duration-300"
-              >
-                Sign Up
-              </button>
+          <header className="px-8 py-6">
+            <div className="text-2xl font-bold">
+              <span className="text-gray-900">Taste</span>
+              <span className="text-pink-500">Match</span>
             </div>
           </header>
 
-          {/* Hero Section */}
-          <section className="flex flex-col items-center justify-center px-8 py-20 text-center">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute top-20 left-10 w-32 h-32 bg-pink-100 rounded-full opacity-20"></div>
-              <div className="absolute top-40 right-20 w-24 h-24 bg-purple-100 rounded-full opacity-30"></div>
-              <div className="absolute bottom-40 left-20 w-20 h-20 bg-pink-200 rounded-full opacity-25"></div>
-              <div className="absolute bottom-20 right-10 w-36 h-36 bg-purple-100 rounded-full opacity-20"></div>
-            </div>
-            
-            <div className="relative z-10 max-w-4xl mx-auto">
+          {/* Main Content - Centered */}
+          <div className="flex-1 flex items-center justify-center px-8">
+            <div className="text-center max-w-4xl mx-auto">
               {/* Main Title */}
-              <h1 className="text-6xl font-bold mb-6">
-                <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-                  TasteMatch
-                </span>
+              <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 tracking-tight">
+                Dating that matches
+                <br />
+                <span className="text-pink-500">your actual taste</span>
               </h1>
               
               {/* Subtitle */}
-              <h2 className="text-4xl font-bold text-gray-800 mb-8">
-                Find Your Perfect Match
-              </h2>
-              
-              {/* Description */}
-              <p className="text-xl text-gray-600 mb-16 max-w-2xl mx-auto leading-relaxed">
-                It's basically Hinge but with your actual personality via your Youtube usage.
+              <p className="text-xl lg:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+                Skip the small talk. Find someone who actually gets you through AI-powered personality matching based on your real interests.
               </p>
-              
-              {/* Features Grid */}
-              <div className="grid md:grid-cols-3 gap-12 mb-16">
-                <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center mb-4">
-                    <span className="text-white text-2xl">👥</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Smart Matching</h3>
-                  <p className="text-gray-600 text-center">Advanced AI analyzes your personality to find compatible matches</p>
-                </div>
-                
-                <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
-                    <span className="text-white text-2xl">💬</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Safe Chat</h3>
-                  <p className="text-gray-600 text-center">Secure messaging with verified profiles and safety features</p>
-                </div>
-                
-                <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-pink-600 to-purple-500 rounded-full flex items-center justify-center mb-4">
-                    <span className="text-white text-2xl">⭐</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Real Connections</h3>
-                  <p className="text-gray-600 text-center">Quality over quantity - meaningful relationships that last</p>
-                </div>
-              </div>
               
               {/* CTA Button */}
               <button 
                 onClick={() => signIn('google')}
-                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
+                className="bg-gray-900 hover:bg-gray-800 text-white px-10 py-4 rounded-full text-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
               >
-                Get Started
+                Start matching for free
               </button>
               
-              {/* Trust Indicators */}
-              <div className="flex flex-wrap justify-center items-center gap-8 mt-16 text-gray-500">
-                <div className="flex items-center gap-2">
-                  <span>✓</span>
-                  <span>100% Free to Join</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span>✓</span>
-                  <span>Safe & Secure</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span>✓</span>
-                  <span>Real Profiles</span>
-                </div>
-              </div>
+              {/* Subtext */}
+              <p className="text-sm text-gray-500 mt-4">No credit card required</p>
             </div>
-          </section>
+          </div>
         </div>
       ) : (
         <div className="min-h-screen bg-gray-50 flex">
@@ -307,14 +221,14 @@ export default function Home() {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full overflow-hidden">
-                    {mounted && session.user?.image ? (
+                    {session.user?.image ? (
                       <img src={session.user.image} alt={session.user.name || 'User'} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-gray-300 flex items-center justify-center text-lg">👤</div>
                     )}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{mounted ? session.user?.name : 'Loading...'}</p>
+                    <p className="font-semibold text-gray-900">{session.user?.name || 'User'}</p>
                     <p className="text-sm text-gray-500">Premium Member</p>
                   </div>
                 </div>
@@ -390,21 +304,19 @@ export default function Home() {
               <div className="flex justify-between items-center">
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">
-                    {mounted && currentView === 'profile' && 'My Profile'}
-                    {mounted && currentView === 'swipe' && 'Discover'}
-                    {mounted && currentView === 'matches' && 'Matches'}
-                    {mounted && currentView === 'setup' && 'Profile Setup'}
-                    {!mounted && 'Loading...'}
+                    {currentView === 'profile' && 'My Profile'}
+                    {currentView === 'swipe' && 'Discover'}
+                    {currentView === 'matches' && 'Matches'}
+                    {currentView === 'setup' && 'Profile Setup'}
                   </h1>
                   <p className="text-gray-600 mt-1">
-                    {mounted && currentView === 'profile' && 'Your dating profile overview'}
-                    {mounted && currentView === 'swipe' && 'Find your perfect match'}
-                    {mounted && currentView === 'matches' && 'People who liked you back'}
-                    {mounted && currentView === 'setup' && 'Create or refresh your profile'}
-                    {!mounted && 'Please wait...'}
+                    {currentView === 'profile' && 'Your dating profile overview'}
+                    {currentView === 'swipe' && 'Find your perfect match'}
+                    {currentView === 'matches' && 'People who liked you back'}
+                    {currentView === 'setup' && 'Create or refresh your profile'}
                   </p>
                 </div>
-                {!hasProfile && mounted && (
+                {!hasProfile && (
                   <button 
                     onClick={() => signOut()} 
                     className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
