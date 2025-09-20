@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
         summary,
         core_personality_traits,
         interests
+      }, {
+        onConflict: 'google_id'
       })
       .select()
       .single();

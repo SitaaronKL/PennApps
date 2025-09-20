@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import SwipeInterface from '@/app/components/SwipeInterface';
+import DiscoverInterface from '@/app/components/DiscoverInterface';
 import ProfileCards from '@/app/components/ProfileCards';
 import MatchesList from '@/app/components/MatchesList';
 
@@ -289,11 +289,11 @@ export default function Home() {
             />
           )}
 
-          {/* Swipe View */}
+          {/* Discover View */}
           {currentView === 'swipe' && (
             <div>
-              <h2 className="text-3xl font-bold text-center mb-8">Find Your Match</h2>
-              <SwipeInterface />
+              <h2 className="text-3xl font-bold text-center mb-8">Discover Compatible Matches</h2>
+              <DiscoverInterface />
             </div>
           )}
 
