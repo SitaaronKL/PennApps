@@ -80,18 +80,35 @@ const authOptions = {
     strategy: "jwt" as const,
   },
   callbacks: {
-    async jwt({ token, account }: { token: JWT; account: Account | null }) {
+    async jwt({ token, account, user }: { token: JWT; account: Account | null; user?: any }) {
+      // Persist OAuth tokens
       if (account) {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.accessTokenExpires = account.expires_at ? account.expires_at * 1000 : undefined; // Convert to milliseconds
       }
+
+      // Persist basic profile info (needed when using JWT sessions)
+      if (user) {
+        token.name = user.name as string | undefined;
+        token.email = user.email as string | undefined;
+        // NextAuth uses `picture` on the token to populate session.user.image
+        token.picture = (user as any).image as string | undefined;
+      }
+
       return token;
     },
     async session({ session, token }: { session: Session; token: JWT }) {
       if (token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
         session.accessToken = token.accessToken;
         session.error = token.error as string | undefined; // Propagate error if any
+        // Ensure user fields are present on the session for client usage
+        session.user = {
+          ...session.user,
+          name: (token as any).name,
+          email: (token as any).email,
+          image: (token as any).picture,
+        } as any;
         return session;
       }
 
@@ -99,6 +116,12 @@ const authOptions = {
       const refreshedToken = await refreshAccessToken(token);
       session.accessToken = refreshedToken.accessToken;
       session.error = refreshedToken.error; // Propagate error if any
+      session.user = {
+        ...session.user,
+        name: (refreshedToken as any).name,
+        email: (refreshedToken as any).email,
+        image: (refreshedToken as any).picture,
+      } as any;
       return session;
     },
     async redirect({ baseUrl }: { url: string; baseUrl: string }) {
