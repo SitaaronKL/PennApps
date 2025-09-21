@@ -10,12 +10,12 @@ TasteMatch revolutionizes online dating by analyzing users' YouTube consumption 
 
 ### 1. **AI-Powered Profile Generation**
 - **YouTube Data Analysis**: Analyzes user's subscriptions, liked videos, watch later, and playlists
-- **OpenAI Integration**: Generates comprehensive personality profiles using GPT-4o-mini
+- **Gemini Integration**: Generates comprehensive personality profiles using Google Gemini
 - **Rich Profile Data**: Creates dating personas, ideal partner descriptions, and personality breakdowns
 - **Automatic Refresh**: Users can regenerate profiles with updated YouTube data
 
 ### 2. **Smart Compatibility Scoring**
-- **AI Compatibility Analysis**: Uses OpenAI to compare user traits and preferences
+- **AI Compatibility Analysis**: Uses Gemini to compare user traits and preferences
 - **Multi-Dimensional Scoring**: Analyzes personality match, interests alignment, and dating goals
 - **Detailed Compatibility Reasons**: Explains why users match with specific examples
 - **Color-Coded Results**: Visual indicators for compatibility levels (80%+ green, 60%+ yellow, <60% red)
@@ -73,7 +73,7 @@ users (
 ```
 
 ### **AI Integration**
-- **OpenAI GPT-4o-mini**: Personality analysis and compatibility scoring
+- **Google Gemini**: Personality analysis and compatibility scoring
 - **YouTube API v3**: Data fetching (subscriptions, liked videos, playlists)
 - **Smart Text Extraction**: Parses AI responses into structured profile data
 - **Fallback Systems**: Robust error handling with meaningful default content
@@ -84,7 +84,7 @@ users (
 - Node.js 18+
 - npm/yarn/pnpm
 - Google Cloud Console project
-- OpenAI API account
+- Google AI API account
 - Supabase project
 
 ### Environment Variables
@@ -99,9 +99,8 @@ NEXTAUTH_SECRET=your_nextauth_secret
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 
-# OpenAI API
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4o-mini
+# Google AI API
+GOOGLE_AI_API_KEY=your_google_ai_api_key
 
 # Supabase Database
 SUPABASE_PROJECT_URL=your_supabase_url
@@ -146,7 +145,7 @@ npm run dev
 ### 1. **Authentication & Profile Creation**
 1. User signs in with Google (YouTube access required)
 2. System analyzes YouTube data (subscriptions, likes, playlists)
-3. OpenAI generates comprehensive personality profile
+3. Gemini generates comprehensive personality profile
 4. Profile saved to database with all structured fields
 
 ### 2. **Discover Compatible Matches**
@@ -175,7 +174,7 @@ For each potential match:
 
 ### **Profile Generation Pipeline**
 ```
-YouTube Data → OpenAI Analysis → Text Parsing → Structured Data → Database
+YouTube Data → Gemini Analysis → Text Parsing → Structured Data → Database
      ↓              ↓              ↓              ↓             ↓
 Subscriptions   Personality    Extract        Profile       Supabase
 Liked Videos    Analysis       Sections       Object        Storage
@@ -223,7 +222,7 @@ Watch Later     Ideal Partner   Summary
 - ✅ Match and swipe functionality
 
 ### **Phase 2: AI Enhancement**
-- ✅ OpenAI integration for personality analysis
+- ✅ Gemini integration for personality analysis
 - ✅ Structured data extraction from AI responses
 - ✅ Database schema optimization
 - ✅ Profile refresh functionality
@@ -312,7 +311,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **OpenAI** for providing the GPT-4o-mini API
+- **Google AI** for providing the Gemini API
 - **Google** for YouTube Data API v3
 - **Supabase** for database infrastructure
 - **Next.js** team for the excellent framework
